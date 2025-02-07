@@ -1,0 +1,3 @@
+[submodule "flare/lib/forge-std"]
+	path = flare/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std

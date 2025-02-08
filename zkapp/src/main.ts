@@ -1,4 +1,4 @@
-import { Location } from "./Location";
+import { Coords } from "./Coords";
 import {
     Field,
     Mina,
@@ -18,7 +18,7 @@ const senderKey = senderAccount.key;
 const zkAppPrivateKey = PrivateKey.random();
 const zkAppAddress = zkAppPrivateKey.toPublicKey();
 
-const zkAppInstance = new Location(zkAppAddress);
+const zkAppInstance = new Coords(zkAppAddress);
 const deployTxn = await Mina.transaction(deployerAccount, async () => {
     AccountUpdate.fundNewAccount(deployerAccount);
     await zkAppInstance.deploy();
@@ -26,7 +26,30 @@ const deployTxn = await Mina.transaction(deployerAccount, async () => {
 await deployTxn.sign([deployerKey, zkAppPrivateKey]).send();
 
 // TODO: Input desired insured coords and radius
-zkAppInstance.initLocation(Field(0n), Field(0n), Field(100n));
+zkAppInstance.initialize(Field(0n), Field(0n), Field(100n));
+
+/*
+const getPosition = async () => {
+    const position: GeolocationPosition | undefined | null = await new Promise(
+        (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+        }
+    );
+    if (!position) {
+        return undefined;
+    }
+
+    return {
+        x: BigInt(position.coords.longitude * (10 ** 5)),
+        y: BigInt(position.coords.latitude * (10 ** 5)),
+    };
+};
+
+const position = await getPosition();
+if (!position) {
+    throw ("Geolocation error!");
+}
+*/
 
 // TODO: Input EVM receiver
-zkAppInstance.verifyReceiver(Field("0x00"));
+zkAppInstance.verifyCoords(Field(0n), Field(0n), Field("0x00"));

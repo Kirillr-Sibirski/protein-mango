@@ -1,3 +1,3 @@
-import { Location } from "./Location";
+import { Location } from "./Coords";
 
 export { Location };

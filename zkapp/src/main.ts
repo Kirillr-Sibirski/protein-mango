@@ -49,6 +49,7 @@ Mina.setActiveInstance(Network);
 */
 
 const events = await zkAppInstance.fetchEvents(UInt32.from(0));
+console.log(events);
 
 const account: string = '0x' + BigInt(events[0].event.data.toString()).toString(16);
 console.log(account);

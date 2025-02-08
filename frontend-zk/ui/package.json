@@ -14,6 +14,8 @@
     "@radix-ui/react-popover": "^1.1.6",
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
+    "@rainbow-me/rainbowkit": "^2.2.3",
+    "@tanstack/react-query": "^5.66.0",
     "@tanstack/react-table": "^8.20.6",
     "@types/mapbox-gl": "^3.4.1",
     "class-variance-authority": "^0.7.1",
@@ -29,7 +31,9 @@
     "react-map-gl": "^8.0.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
-    "three": "^0.173.0"
+    "three": "^0.173.0",
+    "viem": "^2.22.23",
+    "wagmi": "^2.14.11"
   },
   "devDependencies": {
     "@types/node": "^20",

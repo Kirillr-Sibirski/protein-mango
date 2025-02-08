@@ -1,9 +1,11 @@
-import { Coords } from "./Coords";
+import { Coords } from "./Coords.js";
 import {
     Field,
     Mina,
     PrivateKey,
-    AccountUpdate
+    AccountUpdate,
+    UInt32,
+    CircuitString
 } from "o1js";
 
 const useProof = false;
@@ -22,11 +24,35 @@ const zkAppInstance = new Coords(zkAppAddress);
 const deployTxn = await Mina.transaction(deployerAccount, async () => {
     AccountUpdate.fundNewAccount(deployerAccount);
     await zkAppInstance.deploy();
+
+    // TODO: Input insured coords and radius
+    await zkAppInstance.initialize(Field(0n), Field(0n), Field(100n));
 });
+await deployTxn.prove();
 await deployTxn.sign([deployerKey, zkAppPrivateKey]).send();
 
-// TODO: Input desired insured coords and radius
-zkAppInstance.initialize(Field(0n), Field(0n), Field(100n));
+const verifyTxn = await Mina.transaction(senderAccount, async () => {
+    await zkAppInstance.verifyCoords(
+        Field(0n),
+        Field(0n),
+        Field("0x849e9d62EB9115D8bC13c38b7fa138e2F8900D2D")
+    );
+});
+await verifyTxn.prove();
+await verifyTxn.sign([senderKey]).send();
+
+/*
+const Network = Mina.Network({
+    mina: 'https://api.minascan.io/node/devnet/v1/graphql',
+    archive: 'https://api.minascan.io/archive/devnet/v1/graphql',
+});
+Mina.setActiveInstance(Network);
+*/
+
+const events = await zkAppInstance.fetchEvents(UInt32.from(0));
+
+const account: string = '0x' + BigInt(events[0].event.data.toString()).toString(16);
+console.log(account);
 
 /*
 const getPosition = async () => {
@@ -50,6 +76,3 @@ if (!position) {
     throw ("Geolocation error!");
 }
 */
-
-// TODO: Input EVM receiver
-zkAppInstance.verifyCoords(Field(0n), Field(0n), Field("0x00"));

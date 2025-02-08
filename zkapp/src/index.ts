@@ -1,3 +1,3 @@
-import { Location } from "./Coords";
+import { Coords } from "./Coords.js";
 
-export { Location };
+export { Coords };

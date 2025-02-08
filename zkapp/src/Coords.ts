@@ -28,11 +28,19 @@ export class Coords extends SmartContract {
     }
 
     @method async verifyCoords(x: Field, y: Field, account: Field) {
-        const dx = x.sub(this.centerX.get());
-        const dy = y.sub(this.centerY.get());
+        const centerX = this.centerX.get();
+        this.centerX.requireEquals(centerX);
+
+        const centerY = this.centerY.get();
+        this.centerY.requireEquals(centerY);
+
+        const dx = x.sub(centerX);
+        const dy = y.sub(centerY);
         const distanceSquared = dx.mul(dx).add(dy.mul(dy));
 
         const radius = this.radius.get();
+        this.radius.requireEquals(radius);
+
         distanceSquared.assertLessThanOrEqual(
             radius.mul(radius)
         );

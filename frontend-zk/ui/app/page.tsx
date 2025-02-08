@@ -11,9 +11,9 @@ export default function LandingPage() {
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
             Decentralized Insurance Platform
           </h1>
-          
+
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Revolutionizing insurance with blockchain technology. Built on Flare and Mina protocols,
+            Built on Flare and Mina protocols,
             we provide a transparent, efficient, and secure platform for both insurance providers and claimants.
           </p>
 
@@ -25,7 +25,7 @@ export default function LandingPage() {
               </Link>
             </Button>
 
-            <Button asChild variant="secondary" size="lg" className="border border-accent text-accent bg-background">
+            <Button asChild size="lg" className="border border-accent text-accent bg-background">
               <Link href="/claimer">
                 For Claimants
                 <ArrowRight className="ml-2 h-4 w-4" />

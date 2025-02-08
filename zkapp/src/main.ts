@@ -5,7 +5,6 @@ import {
     PrivateKey,
     AccountUpdate,
     UInt32,
-    CircuitString
 } from "o1js";
 
 const useProof = false;
@@ -35,7 +34,7 @@ const verifyTxn = await Mina.transaction(senderAccount, async () => {
     await zkAppInstance.verifyCoords(
         Field(0n),
         Field(0n),
-        Field("0x849e9d62EB9115D8bC13c38b7fa138e2F8900D2D")
+        Field("0x00")
     );
 });
 await verifyTxn.prove();

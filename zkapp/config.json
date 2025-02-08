@@ -1,4 +1,14 @@
 {
   "version": 1,
-  "deployAliases": {}
+  "deployAliases": {
+    "coords": {
+      "networkId": "testnet",
+      "url": "https://api.minascan.io/node/devnet/v1/graphql",
+      "keyPath": "keys/coords.json",
+      "feepayerKeyPath": "C:\\Users\\John/.cache/zkapp-cli/keys/coords-dev.json",
+      "feepayerAlias": "coords-dev",
+      "fee": "0.1",
+      "smartContract": "Coords"
+    }
+  }
 }

@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/navigation/header';
@@ -17,12 +18,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Header />
         <Web3Provider>
-          {children}
+          <ClientLayout>{children}</ClientLayout>
         </Web3Provider>
-        <Footer />
       </body>
     </html>
+  );
+}
+
+// Client-side layout component
+function ClientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Header />
+      <main>{children}</main>
+      <Footer />
+    </>
   );
 }

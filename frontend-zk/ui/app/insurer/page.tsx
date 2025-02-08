@@ -1,12 +1,30 @@
 "use client";
 import { useState } from "react";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { MapPin, Plus } from "lucide-react";
+import InsuranceEscrow from "@/components/ABIs/InsuranceEscrow.json";
+import { formatEther, parseEther } from "viem";
+
+type Insurance = {
+    receiver: `0x${string}`;
+    token: `0x${string}`;
+    premium: bigint;
+    payout: bigint;
+    x: bigint;
+    y: bigint;
+    radius: bigint;
+    snarkId: `0x${string}`;
+    value: bigint;
+};
+
+const CONTRACT_ADDRESS = "0xYourContractAddress" as const;
 
 export default function InsurerPage() {
+    const { address } = useAccount();
     const [formData, setFormData] = useState({
         radius: "",
         premium: "",
@@ -16,19 +34,41 @@ export default function InsurerPage() {
         lng: ""
     });
 
-    const [contracts, setContracts] = useState([
-        {
-            id: 1,
-            radius: "500",
-            premium: "0.1",
-            totalAmount: "1000",
-            amountPerClaimer: "100",
-            location: { lat: 40.7128, lng: -74.0060 },
-            active: true
-        },
-    ]);
+    // Read contract data
+    const { data: insuranceData } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: InsuranceEscrow,
+        functionName: "getInsurances",
+        query: {
+            refetchInterval: 3000,
+        }
+    });
 
-    const handleInputChange = (e: any) => {
+    // Write contract function
+    const { writeContract, isPending } = useWriteContract();
+
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({
+                    ...prev,
+                    lat: position.coords.latitude.toFixed(4),
+                    lng: position.coords.longitude.toFixed(4)
+                }));
+            },
+            (error) => {
+                alert("Unable to retrieve your location. Please enter manually.");
+                console.error("Geolocation error:", error);
+            }
+        );
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -36,22 +76,55 @@ export default function InsurerPage() {
         }));
     };
 
-    const handleCreateContract = async (e: any) => {
+    const handleCreateContract = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.lat || !formData.lng) {
-            alert("Please enter valid coordinates.");
+        if (!address) {
+            alert("Please connect your wallet");
             return;
         }
 
-        const contractData = {
-            ...formData,
-            location: { lat: parseFloat(formData.lat), lng: parseFloat(formData.lng) }
-        };
+        try {
+            // Convert string inputs to appropriate types for contract interaction
+            const radiusBigInt = BigInt(Math.floor(parseFloat(formData.radius)));
+            const premiumInWei = parseEther(formData.premium);
+            const amountPerClaimerInWei = parseEther(formData.amountPerClaimer);
+            const totalAmountInWei = parseEther(formData.totalAmount);
+            const latitudeBigInt = BigInt(Math.floor(parseFloat(formData.lat) * 1e6));
+            const longitudeBigInt = BigInt(Math.floor(parseFloat(formData.lng) * 1e6));
 
-        // TODO: INTEGRATE FLARE HERE
+            // TODO: connect flare
+            writeContract({
+                address: CONTRACT_ADDRESS,
+                abi: InsuranceEscrow,
+                functionName: "newInsurance",
+                args: [
+                    address,
+                    premiumInWei,
+                    amountPerClaimerInWei,
+                    latitudeBigInt,
+                    longitudeBigInt,
+                    radiusBigInt,
+                    "0xSNARKID" as `0x${string}`, // Cast the snarkId to the correct type
+                    totalAmountInWei
+                ],
+            });
 
-        console.log("Creating new contract with data:", contractData);
+            setFormData({
+                radius: "",
+                premium: "",
+                totalAmount: "",
+                amountPerClaimer: "",
+                lat: "",
+                lng: ""
+            });
+
+        } catch (error) {
+            console.error("Error creating contract:", error);
+            alert("Error creating contract. Please check the console for details.");
+        }
     };
+
+    const insuranceList = (insuranceData as Insurance[]) || [];
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
@@ -60,38 +133,40 @@ export default function InsurerPage() {
                 <div className="lg:col-span-1">
                     <section className="mb-8">
                         <h2 className="text-3xl font-bold mb-6">Active Contracts</h2>
-                        {contracts.length === 0 ? (
+                        {insuranceList.length === 0 ? (
                             <div className="text-muted-foreground">No open contracts</div>
                         ) : (
                             <div className="grid grid-cols-1 gap-6">
-                                {contracts.map((contract) => (
-                                    <Card key={contract.id} className="bg-background text-foreground">
+                                {insuranceList.map((insurance, index) => (
+                                    <Card key={index} className="bg-background text-foreground">
                                         <CardHeader>
-                                            <CardTitle>Contract #{contract.id}</CardTitle>
+                                            <CardTitle>Contract #{index + 1}</CardTitle>
                                             <CardDescription>Active Insurance Contract</CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                             <div className="space-y-2">
+                                                {/* Contract details rendering */}
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">Radius:</span>
-                                                    <span>{contract.radius}m</span>
+                                                    <span>{insurance.radius.toString()}m</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">Daily Premium:</span>
-                                                    <span>{contract.premium} ETH</span>
+                                                    <span className="text-muted-foreground">Premium:</span>
+                                                    <span>{formatEther(insurance.premium)} FLR</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">Total Amount:</span>
-                                                    <span>{contract.totalAmount} ETH</span>
+                                                    <span>{formatEther(insurance.value)} FLR</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-muted-foreground">Per Claimer:</span>
-                                                    <span>{contract.amountPerClaimer} ETH</span>
+                                                    <span>{formatEther(insurance.payout)} FLR</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-muted-foreground">
                                                     <MapPin className="h-4 w-4" />
                                                     <span>
-                                                        {contract.location.lat.toFixed(4)}, {contract.location.lng.toFixed(4)}
+                                                        {(Number(insurance.x) / 1e6).toFixed(4)},
+                                                        {(Number(insurance.y) / 1e6).toFixed(4)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -106,52 +181,122 @@ export default function InsurerPage() {
                 {/* Right Column - Create Contract Form */}
                 <div className="lg:col-span-2">
                     <Card className="bg-background text-foreground">
-                        <CardHeader>
-                            <CardTitle>Create New Contract</CardTitle>
-                            <CardDescription>Set up a new insurance contract with your parameters</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleCreateContract} className="space-y-6">
+                        <form onSubmit={handleCreateContract}>  {/* Move form tag here */}
+                            <CardHeader>
+                                <CardTitle>Create New Contract</CardTitle>
+                                <CardDescription>Set up a new insurance contract with your parameters</CardDescription>
+                            </CardHeader>
+                            <CardContent>
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="radius">Coverage Radius (meters)</Label>
-                                            <Input id="radius" type="number" placeholder="500" value={formData.radius} onChange={handleInputChange} required />
+                                            <Input
+                                                id="radius"
+                                                type="number"
+                                                placeholder="500"
+                                                value={formData.radius}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="premium">Daily Premium (ETH)</Label>
-                                            <Input id="premium" type="number" step="0.01" placeholder="0.1" value={formData.premium} onChange={handleInputChange} required />
+                                            <Label htmlFor="premium">Daily Premium (FLR)</Label>
+                                            <Input
+                                                id="premium"
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.1"
+                                                value={formData.premium}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
                                         </div>
                                     </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="totalAmount">Total Amount (ETH)</Label>
-                                            <Input id="totalAmount" type="number" step="0.1" placeholder="1000" value={formData.totalAmount} onChange={handleInputChange} required />
+                                            <Label htmlFor="totalAmount">Total Amount (FLR)</Label>
+                                            <Input
+                                                id="totalAmount"
+                                                type="number"
+                                                step="0.1"
+                                                placeholder="1000"
+                                                value={formData.totalAmount}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="amountPerClaimer">Amount per Claimer (ETH)</Label>
-                                            <Input id="amountPerClaimer" type="number" step="0.1" placeholder="100" value={formData.amountPerClaimer} onChange={handleInputChange} required />
+                                            <Label htmlFor="amountPerClaimer">Amount per Claimer (FLR)</Label>
+                                            <Input
+                                                id="amountPerClaimer"
+                                                type="number"
+                                                step="0.1"
+                                                placeholder="100"
+                                                value={formData.amountPerClaimer}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
                                         </div>
                                     </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="lat">Latitude</Label>
-                                            <Input id="lat" type="number" step="0.0001" placeholder="40.7128" value={formData.lat} onChange={handleInputChange} required />
+                                            <Input
+                                                id="lat"
+                                                type="number"
+                                                step="0.0001"
+                                                placeholder="40.7128"
+                                                value={formData.lat}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="lng">Longitude</Label>
-                                            <Input id="lng" type="number" step="0.0001" placeholder="-74.0060" value={formData.lng} onChange={handleInputChange} required />
+                                            <Input
+                                                id="lng"
+                                                type="number"
+                                                step="0.0001"
+                                                placeholder="-74.0060"
+                                                value={formData.lng}
+                                                onChange={handleInputChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={handleGetLocation}
+                                            >
+                                                <MapPin className="h-4 w-4 mr-2" />
+                                                Use Current Location
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
-                            </form>
-                        </CardContent>
-                        <CardFooter>
-                            <Button onClick={handleCreateContract} className="w-full">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Contract
-                            </Button>
-                        </CardFooter>
+                            </CardContent>
+                            <CardFooter>
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={isPending}
+                                >
+                                    {isPending ? (
+                                        <span>Creating...</span>
+                                    ) : (
+                                        <>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Create Contract
+                                        </>
+                                    )}
+                                </Button>
+                            </CardFooter>
+                        </form>
                     </Card>
                 </div>
             </div>

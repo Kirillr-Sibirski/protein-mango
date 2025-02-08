@@ -4,11 +4,18 @@ pragma solidity ^0.8.27;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract InsuranceEscrow {
+    struct Vector2 {
+        uint256 x;
+        uint256 y;
+    }
+
     struct Insurance {
         address receiver;
         address token;
         uint256 premium;
         uint256 payout;
+        Vector2 location;
+        uint256 radius;
         bytes32 snarkId;
         mapping(address => uint256) timestamps;
     }
@@ -23,6 +30,8 @@ contract InsuranceEscrow {
         address token,
         uint256 premium,
         uint256 payout,
+        Vector2 memory location,
+        uint256 radius,
         bytes32 snarkId,
         uint256 value
     ) external returns (uint256 id) {
@@ -35,6 +44,8 @@ contract InsuranceEscrow {
         _insurances[id].token = token;
         _insurances[id].premium = premium;
         _insurances[id].payout = payout;
+        _insurances[id].location = location;
+        _insurances[id].radius = radius;
         _insurances[id].snarkId = snarkId;
     }
 

@@ -43,35 +43,25 @@ contract PrepareAttestationRequest is Script {
         string memory listEvents,
         string memory logIndices
     ) private pure returns (string memory) {
-
-
-            jq '.features[] | {',
-            'timestamp: .properties.time, ',
-            'mag: .properties.mag, ',
-            'lat: .geometry.coordinates[1],',
-            ' long: .geometry.coordinates[0]',
-            '}' input.json
-
-
-
-
-            string memory str = string.concat(
-                '{"url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=37.7749&longitude=-122.4194&maxradiuskm=50&starttime=2024-01-01&endtime=2024-01-03",',
-                    '"postprocessJq": "{',
-                        'timestamp: .timestamp,',
-                        'magnitude: .magnitude*pow(10;3),',
-                        'long: .long*pow(10;6),',
-                        'lat: .lat*pow(10;6)',
-                    '}",',
-                    '"abi_signature": "',
-                        '{\\"components\\": [',
-                        '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"timestamp\\",\\"type\\": \\"uint256\\"},',
-                        '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"magnitude\\",\\"type\\": \\"uint256\\"},',
-                        '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"long\\",\\"type\\": \\"uint256\\"},',
-                        '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"lat\\",\\"type\\": \\"uint256\\"}',
-                        '],',
-                        '\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}"',
-                '}'
+        string memory str = string.concat(
+            '{"url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=37.7749&longitude=-122.4194&maxradiuskm=50&starttime=2024-01-01&endtime=2024-01-03",',
+                '"postprocessJq": "{',
+                    'features[] | {',
+                        'timestamp: .properties.time, ',
+                        'mag: .properties.mag*pow(10; 3), ',
+                        'lat: .geometry.coordinates[1]*pow(10; 6), ',
+                        'long: .geometry.coordinates[0]*pow(10; 6)',
+                    '}',
+                '}",',
+                '"abi_signature": "',
+                    '{\\"components\\": [',
+                    '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"timestamp\\",\\"type\\": \\"uint256\\"},',
+                    '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"mag\\",\\"type\\": \\"uint256\\"},',
+                    '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"long\\",\\"type\\": \\"uint256\\"},',
+                    '{\\"internalType\\": \\"uint256\\",\\"name\\": \\"lat\\",\\"type\\": \\"uint256\\"}',
+                    '],',
+                    '\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}"',
+            '}'
         );
         console.log(str);
         return str;

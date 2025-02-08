@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { Header } from "@/components/navigation/header";
-import { Footer } from "@/components/navigation/footer";
+// app/layout.tsx
+import type { Metadata } from 'next';
+import './globals.css';
+import { Header } from '@/components/navigation/header';
+import { Footer } from '@/components/navigation/footer';
+import { Web3Provider } from '@/components/providers/WagmiProvider';
 
 export const metadata: Metadata = {
-  title: "Protein Mango - Insurance Protocol",
+  title: 'Protein Mango - Insurance Protocol',
   description: "Insurance protocol powered by Flare's web2 data sources & Mina's zk-proofs.",
 };
 
@@ -16,10 +18,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Header />
-        {children}
-        <Footer />
+        <Web3Provider>
+          <ClientLayout>{children}</ClientLayout>
+        </Web3Provider>
       </body>
     </html>
+  );
+}
+
+// Client-side layout component
+function ClientLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Header />
+      <main>{children}</main>
+      <Footer />
+    </>
   );
 }

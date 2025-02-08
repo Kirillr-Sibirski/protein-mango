@@ -54,7 +54,7 @@ export default function InsurerPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 min-h-screen">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column - Active Contracts */}
                 <div className="lg:col-span-1">

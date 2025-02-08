@@ -36,7 +36,6 @@ type Contract = {
 
 export default function ClaimerPage() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [coordinates, setCoordinates] = useState({ lat: "", lng: "" });
 
     const [userContracts] = useState<Contract[]>([
         {
@@ -128,27 +127,30 @@ export default function ClaimerPage() {
         onGlobalFilterChange: setSearchQuery,
     });
 
-    const getLocation = () => {
-        if (navigator.geolocation) {
+    const handleClaim = (contractId: any, insurerAddress: string) => {
+        console.log("Claiming contract:", contractId);
+        console.log("Insurer address:", insurerAddress);
+
+        // Check if the Geolocation API is supported by the browser
+        if ("geolocation" in navigator) {
+            // Get the current position
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    setCoordinates({
-                        lat: position.coords.latitude.toFixed(6),
-                        lng: position.coords.longitude.toFixed(6),
-                    });
+                    // Success callback
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    console.log("GPS Coordinates:", { latitude, longitude });
+
+                    // TODO: Mint Mina ZK proof
                 },
                 (error) => {
-                    console.error("Error getting location:", error);
+                    // Error callback
+                    console.error("Error getting GPS coordinates:", error);
                 }
             );
         } else {
             console.error("Geolocation is not supported by this browser.");
         }
-    };
-
-    const handleClaim = (contractId: any) => {
-        console.log("Claiming contract:", contractId);
-        // TODO: Mint Mina ZK proof
     };
 
     const handlePremium = (contractId: any) => {
@@ -162,7 +164,7 @@ export default function ClaimerPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 min-h-screen">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column - User Contracts */}
                 <div className="lg:col-span-1">
@@ -194,7 +196,7 @@ export default function ClaimerPage() {
                                                 Pay the Premium
                                             </Button>
                                             <Button
-                                                onClick={() => handleClaim(contract.id)}
+                                                onClick={() => handleClaim(contract.id, contract.insurer)}
                                                 className="w-full"
                                             >
                                                 Claim Now

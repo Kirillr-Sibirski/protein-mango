@@ -16,6 +16,7 @@ const nextConfig = {
     } else {
       config.externals.push('o1js') // https://nextjs.org/docs/app/api-reference/next-config-js/serverExternalPackages
     }
+    config.externals.push("three"); // Ensures Three.js is not tree-shaken
     config.experiments = { ...config.experiments, topLevelAwait: true };
     return config;
   },
@@ -35,6 +36,7 @@ const nextConfig = {
             value: 'require-corp',
           },
         ],
+        
       },
     ];
   },

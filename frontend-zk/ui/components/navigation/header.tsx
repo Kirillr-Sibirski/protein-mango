@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export function Header() {
   return (
@@ -13,12 +14,14 @@ export function Header() {
               height={40}
               className="h-10 w-10"
             />
-            <span 
-              className="text-lg font-semibold text-[hsl(var(--accent))]"
-              style={{ letterSpacing: "0.05em" }}
-            >
-              Protein Mango
-            </span>
+            <Link href="/">
+              <span 
+                className="text-lg font-semibold text-[hsl(var(--accent))]"
+                style={{ letterSpacing: "0.05em" }}
+              >
+                Protein Mango
+              </span>
+            </Link>
           </div>
         </div>
       </nav>

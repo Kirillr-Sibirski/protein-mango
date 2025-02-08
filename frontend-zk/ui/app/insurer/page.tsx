@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Plus } from "lucide-react";
 import InsuranceEscrow from "@/components/ABIs/InsuranceEscrow.json";
 import { formatEther, parseEther } from "viem";
+import { deployCoords } from "@/lib/mina";
+import bs58 from "bs58";
 
 type Insurance = {
     receiver: `0x${string}`;
@@ -21,7 +23,7 @@ type Insurance = {
     value: bigint;
 };
 
-const CONTRACT_ADDRESS = "0xYourContractAddress" as const;
+const CONTRACT_ADDRESS = "0xYourContractAddress" as const; // Flare contract
 
 export default function InsurerPage() {
     const { address } = useAccount();
@@ -84,7 +86,7 @@ export default function InsurerPage() {
         }
 
         try {
-            // Convert string inputs to appropriate types for contract interaction
+            // Convert form values
             const radiusBigInt = BigInt(Math.floor(parseFloat(formData.radius)));
             const premiumInWei = parseEther(formData.premium);
             const amountPerClaimerInWei = parseEther(formData.amountPerClaimer);
@@ -92,7 +94,22 @@ export default function InsurerPage() {
             const latitudeBigInt = BigInt(Math.floor(parseFloat(formData.lat) * 1e6));
             const longitudeBigInt = BigInt(Math.floor(parseFloat(formData.lng) * 1e6));
 
-            // TODO: connect flare
+            // Deploy Mina zkApp
+            const minaAppAddress = await deployCoords(
+                latitudeBigInt,
+                longitudeBigInt,
+                radiusBigInt
+            );
+
+            if (!minaAppAddress) {
+                throw new Error("Failed to deploy Mina zkApp");
+            }
+
+            // Convert Mina address to bytes32 for Ethereum
+            const decoded = bs58.decode(minaAppAddress);
+            const snarkId = `0x${Buffer.from(decoded).toString('hex').slice(0, 64)}` as `0x${string}`;
+
+            // Create insurance contract with native token value
             writeContract({
                 address: CONTRACT_ADDRESS,
                 abi: InsuranceEscrow,
@@ -104,9 +121,9 @@ export default function InsurerPage() {
                     latitudeBigInt,
                     longitudeBigInt,
                     radiusBigInt,
-                    "0xSNARKID" as `0x${string}`, // Cast the snarkId to the correct type
-                    totalAmountInWei
+                    snarkId
                 ],
+                value: totalAmountInWei // Native token value
             });
 
             setFormData({

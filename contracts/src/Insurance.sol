@@ -67,7 +67,7 @@ contract InsuranceEscrow {
                 msg.value
             )
         );
-
+    
         id = _insurances.length;
 
         emit NewInsurance(id);

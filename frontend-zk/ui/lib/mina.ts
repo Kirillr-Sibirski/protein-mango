@@ -1,7 +1,7 @@
 "use server";
 
 import { AccountUpdate, Field, Mina, PrivateKey, PublicKey } from "o1js";
-import { Coords } from "../../../zkapp/build/src/Coords.js";
+import { Coords } from "../../../zkapp/src/Coords.js";
 
 const minaNetwork = Mina.Network({
     mina: 'https://api.minascan.io/node/devnet/v1/graphql',
@@ -12,7 +12,7 @@ Mina.setActiveInstance(minaNetwork);
 const devPrivateKey = PrivateKey.fromBase58(process.env.MINA_DEV_PRIVATE_KEY);
 const devAddress = devPrivateKey.toPublicKey();
 
-export async function deployCoords(
+export async function deployCoords( // Called when the insurer creates a new insurance contract
     x: bigint,
     y: bigint, 
     radius: bigint
@@ -37,7 +37,7 @@ export async function deployCoords(
     return undefined;
 }
 
-export async function verifyCoords(
+export async function verifyCoords( // Called when the claimant makes a claim
     appAddress: string, 
     x: bigint, 
     y: bigint, 

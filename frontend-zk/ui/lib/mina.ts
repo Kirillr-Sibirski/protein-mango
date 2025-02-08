@@ -1,3 +1,5 @@
+"use server";
+
 import { AccountUpdate, Field, Mina, PrivateKey, PublicKey } from "o1js";
 import { Coords } from "../../../zkapp/build/src/Coords.js";
 
@@ -7,8 +9,7 @@ const minaNetwork = Mina.Network({
 });
 Mina.setActiveInstance(minaNetwork);
 
-// TODO: Read from env
-const devPrivateKey = PrivateKey.random();
+const devPrivateKey = PrivateKey.fromBase58(process.env.MINA_DEV_PRIVATE_KEY);
 const devAddress = devPrivateKey.toPublicKey();
 
 export async function deployCoords(

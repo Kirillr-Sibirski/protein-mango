@@ -4,11 +4,7 @@ pragma solidity ^0.8.27;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract InsuranceEscrow {
-    event NewInsurance(
-        uint256 indexed id,
-        address indexed token,
-        uint256 indexed value
-    );
+    event NewInsurance(uint256 indexed id);
 
     event PremiumPaid(uint256 indexed id, address indexed payer);
 
@@ -20,7 +16,6 @@ contract InsuranceEscrow {
 
     struct Insurance {
         address receiver;
-        address token;
         uint256 premium;
         uint256 payout;
         uint256 x;
@@ -40,48 +35,48 @@ contract InsuranceEscrow {
         return _insurances;
     }
 
-    function getPremiumTimestamp(uint256 id, address account) external view returns (uint256) {
+    function getPremiumTimestamp(
+        uint256 id,
+        address account
+    ) external view returns (uint256) {
         return _premiumTimestamps[id][account];
     }
 
     function newInsurance(
         address receiver,
-        address token,
         uint256 premium,
         uint256 payout,
         uint256 x,
         uint256 y,
         uint256 radius,
-        bytes32 snarkId,
-        uint256 value
-    ) external returns (uint256 id) {
-        IERC20(token).transferFrom(msg.sender, address(this), value);
+        bytes32 snarkId
+    ) external payable returns (uint256 id) {
+        if (msg.value < payout) {
+            revert("");
+        }
 
         _insurances.push(
             Insurance(
                 receiver,
-                token,
                 premium,
                 payout,
                 x,
                 y,
                 radius,
                 snarkId,
-                value
+                msg.value
             )
         );
 
         id = _insurances.length;
 
-        emit NewInsurance(id, token, value);
+        emit NewInsurance(id);
     }
 
-    function payPremium(uint256 id) external {
-        IERC20(_insurances[id].token).transferFrom(
-            msg.sender,
-            _insurances[id].receiver,
-            _insurances[id].premium
-        );
+    function payPremium(uint256 id) external payable {
+        if (msg.value < _insurances[id].premium) {
+            revert("");
+        }
 
         _premiumTimestamps[id][msg.sender] = block.timestamp;
 
@@ -99,10 +94,10 @@ contract InsuranceEscrow {
         _insurances[id].value -= _insurances[id].payout;
         _premiumTimestamps[id][msg.sender] = 0;
 
-        IERC20(_insurances[id].token).transfer(
-            msg.sender,
-            _insurances[id].payout
-        );
+        (bool sent,) = msg.sender.call{value: _insurances[id].payout}("");
+        if(!sent) {
+            revert("");
+        }
 
         emit ClaimPaid(id, msg.sender, _insurances[id].payout);
     }

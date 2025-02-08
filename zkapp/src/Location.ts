@@ -7,7 +7,9 @@ import {
 } from 'o1js';
 
 export class Location extends SmartContract {
-    @state(Field) receiver = State<Field>();
+    events = {
+        "receiver-verified": Field,
+    };
 
     @state(Field) centerX = State<Field>();
     @state(Field) centerY = State<Field>();
@@ -25,10 +27,30 @@ export class Location extends SmartContract {
         this.radius.set(radius);
     }
 
-    @method async setReceiver(receiver: Field) {
-        // TODO: Get lat and long
-        const x = new Field(0);
-        const y = new Field(0);
+    @method async verifyReceiver(receiver: Field) {
+        const getPosition = async () => {
+            const position: GeolocationPosition | undefined | null = await new Promise(
+                (resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject);
+                }
+            );
+            if (!position) {
+                return undefined;
+            }
+
+            return {
+                x: BigInt(position.coords.longitude * (10 ** 5)),
+                y: BigInt(position.coords.latitude * (10 ** 5)),
+            };
+        };
+
+        const position = await getPosition();
+        if (!position) {
+            throw ("Geolocation error!");
+        }
+
+        const x = new Field(position.x);
+        const y = new Field(position.y);
 
         const dx = x.sub(this.centerX.get());
         const dy = y.sub(this.centerY.get());
@@ -39,6 +61,6 @@ export class Location extends SmartContract {
             radius.mul(radius)
         );
 
-        this.receiver.set(receiver);
+        this.emitEvent("receiver-verified", receiver);
     }
 }

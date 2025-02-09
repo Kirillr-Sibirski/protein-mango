@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-//import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+//import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
+
 
 //import {IJsonApiVerification} from "@flarenetwork/flare-periphery-contracts/coston/IJsonApiVerification.sol";
+import {IJsonApiVerification} from "flare-periphery/src/coston/IJsonApiVerification.sol";
 //import {IJsonApi} from "@flarenetwork/flare-periphery-contracts/coston/IJsonApi.sol";
+import {IJsonApi} from "flare-periphery/src/coston/IJsonApi.sol";
 //import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston/ContractRegistry.sol";
+import {ContractRegistry} from "flare-periphery/src/coston/ContractRegistry.sol";
 
 contract InsuranceEscrow {
     event NewInsurance(uint256 indexed id);
@@ -118,14 +123,14 @@ contract InsuranceEscrow {
 
         // TODO: Query disaster API
         QuakeDataTransportObject memory qdto = abi.decode(
-            data.data.responseBody.abi_encoded_data,
+            quakeData.data.responseBody.abi_encoded_data,
             (QuakeDataTransportObject)
         );
         
 
         // TODO: Query zkProof of location on Mina
         MinaDataTransportObject memory mdto = abi.decode(
-            data.data.responseBody.abi_encoded_data,
+            minaData.data.responseBody.abi_encoded_data,
             (MinaDataTransportObject)
         );
         address claimantAddress = mdto.claimantAddress;
@@ -142,7 +147,6 @@ contract InsuranceEscrow {
     }
 }
 
-
 contract GeoDistance {
     uint256 private constant R = 6371000 * 1e9; // Earth's radius in meters, scaled by 1e9
     uint256 private constant PI = 3141592653; // Approximate PI * 1e9 for integer math
@@ -150,7 +154,7 @@ contract GeoDistance {
 
     // Convert degrees to radians (scaled by 1e9)
     function toRadians(int256 deg) internal pure returns (int256) {
-        return (deg * PI) / 180;
+        return (deg * int256(PI)) / 180;
     }
 
     // Haversine formula to calculate distance between two points
@@ -185,13 +189,13 @@ contract GeoDistance {
 
     // Approximate sin²(x) using Taylor series (scaled)
     function sinSquared(int256 x) internal pure returns (uint256) {
-        int256 sinX = (x - (x**3) / (6 * SCALE) + (x**5) / (120 * SCALE)) / SCALE;
-        return uint256((sinX * sinX) / SCALE);
+        int256 sinX = (x - (x**3) / (6 * int256(SCALE)) + (x**5) / (120 * int256(SCALE))) / int256(SCALE);
+        return uint256((sinX * sinX) / int256(SCALE));
     }
 
     // Approximate cos(x) using Taylor series (scaled)
     function cos(int256 x) internal pure returns (uint256) {
-        return uint256((SCALE - (x**2) / (2 * SCALE) + (x**4) / (24 * SCALE)) / SCALE);
+        return uint256((int256(SCALE) - (x**2) / (2 * int256(SCALE)) + (x**4) / (24 * int256(SCALE))) / int256(SCALE));
     }
 
     // Approximate sqrt using Babylonian method

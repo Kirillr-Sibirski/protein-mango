@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "../lib/forge-std/src/Script.sol";
-//import {InsuranceEscrow} from "../src/InsuranceEscrow.sol";
-import {GeoDistance} from "../src/Insurance.sol";
+import "forge-std/Script.sol";
+import {InsuranceEscrow} from "src/Insurance.sol";
+import {GeoDistance} from "src/Insurance.sol";
 
 contract DeployInsuranceEscrow is Script {
     function run() external {

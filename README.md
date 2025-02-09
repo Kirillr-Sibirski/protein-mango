@@ -1,5 +1,3 @@
-# protein-mango
-Protein Mango - Flare 
 
 # Background
 Traditional insurance has several limitations:

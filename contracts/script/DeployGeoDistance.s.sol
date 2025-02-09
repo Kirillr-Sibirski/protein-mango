@@ -3,7 +3,6 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
 import {InsuranceEscrow} from "src/Insurance.sol";
-import {GeoDistance} from "src/Insurance.sol";
 
 contract DeployInsuranceEscrow is Script {
     function run() external {
@@ -14,8 +13,8 @@ contract DeployInsuranceEscrow is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy the GeoDistance contract
-        GeoDistance geoDistance = new GeoDistance();
-        console.log("GeoDistance deployed at:", address(geoDistance));
+        InsuranceEscrow insurance = new InsuranceEscrow();
+        console.log("InsuranceEscrow deployed at:", address(insurance));
 
         // Stop broadcasting
         vm.stopBroadcast();

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
+import {console} from "forge-std/Test.sol";
+
 //import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
 import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 
@@ -126,7 +128,7 @@ contract InsuranceEscrow {
             quakeData.data.responseBody.abi_encoded_data,
             (QuakeDataTransportObject)
         );
-        
+        uint256 distance = calculateFlatEarthDistance(qdto.long, qdto.lat, _insurances);
 
         // TODO: Query zkProof of location on Mina
         MinaDataTransportObject memory mdto = abi.decode(
@@ -145,77 +147,25 @@ contract InsuranceEscrow {
 
         emit ClaimPaid(id, msg.sender, _insurances[id].payout);
     }
-}
 
-contract GeoDistance {
-    uint256 private constant R = 6371000 * 1e9; // Earth's radius in meters, scaled by 1e9
-    uint256 private constant PI = 3141592653; // Approximate PI * 1e9 for integer math
-    uint256 private constant SCALE = 1e9; // Scaling factor for lat/long
+    // Distance calculation which assumes a flat earth
+    // TODO Implement simplified Haversine calculation instead
+    function calculateFlatEarthDistance(
+        uint lat1, uint lon1, 
+        uint lat2, uint lon2
+    ) public pure returns (uint) {
+        // Constants for converting degrees to meters (rough approximation)
+        uint metersPerLatitude = 111000; // meters per degree of latitude (roughly)
 
-    // Convert degrees to radians (scaled by 1e9)
-    function toRadians(int256 deg) internal pure returns (int256) {
-        return (deg * int256(PI)) / 180;
-    }
+        // Calculate absolute differences
+        uint deltaLat = lat2 > lat1 ? lat2 - lat1 : lat1 - lat2;
+        uint deltaLon = lon2 > lon1 ? lon2 - lon1 : lon1 - lon2;
 
-    // Haversine formula to calculate distance between two points
-    function haversineDistance(
-        int256 lat1, int256 lon1, 
-        int256 lat2, int256 lon2
-    ) public pure returns (uint256) {
-        // Convert latitudes and longitudes from degrees to radians (scaled)
-        int256 dLat = toRadians(lat2 - lat1);
-        int256 dLon = toRadians(lon2 - lon1);
+        // Simple Pythagorean theorem (no curvature)
+        uint distance = (deltaLat * metersPerLatitude)**2 + (deltaLon * metersPerLatitude)**2;
 
-        int256 radLat1 = toRadians(lat1);
-        int256 radLat2 = toRadians(lat2);
-
-        // sin²(Δlat/2)
-        uint256 sinDLat = sinSquared(dLat / 2);
-        // sin²(Δlon/2)
-        uint256 sinDLon = sinSquared(dLon / 2);
-
-        // a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlon/2)
-        uint256 a = sinDLat + 
-            (cos(radLat1) * cos(radLat2) / SCALE) * sinDLon;
-
-        // c = 2 * atan2(√a, √(1−a))
-        uint256 c = (2 * atan2(sqrt(a), sqrt(SCALE - a)));
-
-        // Distance = R * c
-        uint256 distance = (R * c) / SCALE;
-
-        return distance / SCALE; // Return distance in meters
-    }
-
-    // Approximate sin²(x) using Taylor series (scaled)
-    function sinSquared(int256 x) internal pure returns (uint256) {
-        int256 sinX = (x - (x**3) / (6 * int256(SCALE)) + (x**5) / (120 * int256(SCALE))) / int256(SCALE);
-        return uint256((sinX * sinX) / int256(SCALE));
-    }
-
-    // Approximate cos(x) using Taylor series (scaled)
-    function cos(int256 x) internal pure returns (uint256) {
-        return uint256((int256(SCALE) - (x**2) / (2 * int256(SCALE)) + (x**4) / (24 * int256(SCALE))) / int256(SCALE));
-    }
-
-    // Approximate sqrt using Babylonian method
-    function sqrt(uint256 y) internal pure returns (uint256 z) {
-        if (y > 3) {
-            z = y;
-            uint256 x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
-    }
-
-    // atan2 approximation
-    function atan2(uint256 y, uint256 x) internal pure returns (uint256) {
-        // Approximation for small values
-        if (x == 0) return PI / 2;
-        return (y * SCALE) / x; 
+        return distance / 10**22;
     }
 }
+
+

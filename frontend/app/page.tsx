@@ -1,72 +1,46 @@
 "use client";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 
-import { InsuranceForm } from "@/components/insurance-form";
-import { insuranceEscrow } from "@/components/thirdweb-button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
-import { toEther } from "thirdweb";
-import { useReadContract } from "thirdweb/react";
+// Dynamically import the ThreeScene component with SSR disabled
+const ThreeScene = dynamic(() => import('@/components/three-scene'), {
+  ssr: false,
+});
 
-export default function Home() {
-	const { data: insurances } = useReadContract({
-		contract: insuranceEscrow,
-		method: "getInsurances",
-	});
+export default function LandingPage() {
+  return (
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
+      <ThreeScene />
+      <div className="relative z-10 container mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-left space-y-8">
+          <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+            Decentralized Insurance Platform
+          </h1>
 
-	return (
-		<div className="container mx-auto px-4 py-8 min-h-screen">
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-				<div className="lg:col-span-1">
-					<section className="mb-8">
-						<h2 className="text-3xl font-bold mb-6">Active Contracts</h2>
-						{!insurances || insurances.length === 0 ? (
-							<div className="text-muted-foreground">No open contracts</div>
-						) : (
-							<div className="grid grid-cols-1 gap-6">
-								{insurances.map((insurance, index) => (
-									<Card key={index} className="bg-background text-foreground">
-										<CardHeader>
-											<CardTitle>Contract #{index + 1}</CardTitle>
-											<CardDescription>Active Insurance Contract</CardDescription>
-										</CardHeader>
-										<CardContent>
-											<div className="space-y-2">
-												{/* Contract details rendering */}
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">Radius:</span>
-													<span>{insurance.radius.toString()}m</span>
-												</div>
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">Premium:</span>
-													<span>{toEther(insurance.premium)} FLR</span>
-												</div>
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">Total Amount:</span>
-													<span>{toEther(insurance.value)} FLR</span>
-												</div>
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">Per Claimer:</span>
-													<span>{toEther(insurance.payout)} FLR</span>
-												</div>
-												<div className="flex items-center gap-2 text-muted-foreground">
-													<MapPin className="h-4 w-4" />
-													<span>
-														{(Number(insurance.lat) / 1e6).toFixed(4)},
-														{(Number(insurance.long) / 1e6).toFixed(4)}
-													</span>
-												</div>
-											</div>
-										</CardContent>
-									</Card>
-								))}
-							</div>
-						)}
-					</section>
-				</div>
-				<div className="lg:col-span-2">
-					<InsuranceForm />
-				</div>
-			</div>
-		</div>
-	);
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+            Built on Flare and Mina protocols,
+            we provide a transparent, efficient, and secure platform for both insurance providers and claimants.
+          </p>
+
+          <div className="space-y-4 sm:space-y-0 sm:flex sm:justify-start sm:gap-6 mt-8">
+            <Button asChild size="lg" className="border border-background text-background bg-accent">
+              <Link href="/insurer">
+                For Insurers
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+
+            <Button asChild size="lg" className="border border-accent text-accent bg-background">
+              <Link href="/claimer">
+                For Claimants
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

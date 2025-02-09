@@ -12,6 +12,8 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react";
+import LoadingCards from "./loading-cards";
+import { sleep } from "@/lib/utils";
 
 const schema = z.object({
     radius: z.number(),
@@ -64,6 +66,9 @@ export function InsuranceForm() {
             return;
         }
 
+        setProgress(0);
+
+        /*
         const zkAppAddress = "test";
 
         const transaction = prepareContractCall({
@@ -85,6 +90,11 @@ export function InsuranceForm() {
             account: activeAccount,
             transaction: transaction
         });
+        */
+
+        await sleep(270000);
+
+        setProgress(1)
     };
 
     return (
@@ -241,7 +251,19 @@ export function InsuranceForm() {
                     <div
                         className="w-full"
                     >
-
+                        <LoadingCards
+                            cards={[
+                                {
+                                    name: "Deploying zkApp on Mina",
+                                    estimated: 270000
+                                },
+                                {
+                                    name: "Creating the contract on Flare",
+                                    estimated: 5000
+                                }
+                            ]}
+                            index={progress}
+                        />
                     </div>
                 </CardFooter>
             </form>

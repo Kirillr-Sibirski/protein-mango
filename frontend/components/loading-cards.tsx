@@ -1,7 +1,6 @@
 import type React from "react"
 import { CheckCircle2, Circle, Clock, Hourglass } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { formatTime } from "../lib/utils"
 
 interface LoadingCardsProps {
     cards: LoadingCard[];
@@ -91,4 +90,10 @@ function LoadingCard({
             </span>
         </motion.li>
     )
+}
+
+function formatTime(ms: number) {
+    const seconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(seconds / 60)
+    return `${minutes}:${(seconds % 60).toString().padStart(2, "0")}`
 }

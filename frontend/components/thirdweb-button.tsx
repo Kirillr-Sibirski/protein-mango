@@ -7,6 +7,11 @@ export const thirdwebClient = createThirdwebClient({
     clientId: "46f89a93ab6373445b8219c6267a3c0c"
 });
 
+export const flareTestnet = defineChain({
+    id: 114,
+    rpc: "https://coston2-api.flare.network/ext/C/rpc"
+});
+
 export const insuranceEscrow = getContract({
     client: createThirdwebClient({
         clientId: "46f89a93ab6373445b8219c6267a3c0c"
@@ -557,10 +562,7 @@ export const insuranceEscrow = getContract({
         }
     ],
     address: "0xba9c10e03a453332716bf2065473669db2e77437",
-    chain: defineChain({
-        id: 114,
-        rpc: "https://coston2-api.flare.network/ext/C/rpc"
-    }),
+    chain: flareTestnet,
 });
 
 export function ThirdwebButton() {

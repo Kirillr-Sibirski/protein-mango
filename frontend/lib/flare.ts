@@ -28,7 +28,7 @@ export async function prepareDisasterFdcRequest(): Promise<string | undefined> {
     return await prepareFdcRequest(
         toHex("IJsonApi"),
         toHex("WEB2"),
-        "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=37.7749&longitude=-122.4194&maxradiuskm=50&starttime=2024-01-01&endtime=2024-01-03",
+        "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=0&longitude=0&maxradiuskm=50&starttime=2024-01-01&endtime=2024-01-03",
         `{
             time: (.features[0]?.properties?.time // 0),
             mag: (.features[0]?.properties?.mag // 0 * 10000 | floor),

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { InsuranceForm } from "@/components/insurance-form";
-import { insuranceEscrow } from "@/components/thirdweb-button";
+import { flareTestnet, insuranceEscrow, thirdwebClient } from "@/components/thirdweb-button";
 import { Card, CardHeader, CardTitle, CardFooter, CardDescription, CardContent } from "@/components/ui/card";
 import { MapPin, Search } from "lucide-react";
-import { toEther, sendAndConfirmTransaction, prepareTransaction, toWei, prepareContractCall, sendTransaction } from "thirdweb";
+import { toEther, sendAndConfirmTransaction, prepareTransaction, toWei, prepareContractCall, sendTransaction, getContract, waitForReceipt } from "thirdweb";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import {
 import {
     prepareCoordsFdcRequest, prepareDisasterFdcRequest
 } from "@/lib/flare";
+import { sleep } from "@/lib/utils";
 
 interface ContractInsurance {
     receiver: string;
@@ -79,7 +80,7 @@ export default function ClaimerPage() {
             if (!rawInsurances || !userInsurances || !wallet) return;
 
             const currentTime = Date.now() / 1000; // Unix timestamp in seconds
-            
+
             // Create a map of user insurance IDs to expiry timestamps
             const userInsuranceMap = new Map(
                 userInsurances.map(insurance => [
@@ -108,7 +109,7 @@ export default function ClaimerPage() {
 
             // Split into available and user contracts
             setAvailableContracts(processed.filter(item => !item.premiumPaid));
-            setUserContracts(processed.filter(item => 
+            setUserContracts(processed.filter(item =>
                 userInsuranceMap.has(item.id) && userInsuranceMap.get(item.id)! > currentTime
             ));
         }
@@ -127,24 +128,61 @@ export default function ClaimerPage() {
     const handeClaim = async (insuranceId: number) => {
         try {
             setIsClaiming(true);
-            
-            const minaDataResponse = await prepareCoordsFdcRequest(insuranceEscrow.address, wallet!.address);
-            const quakeDataResponse = await prepareDisasterFdcRequest();
 
-            if (!minaDataResponse || !quakeDataResponse) {
+            const minaEncodedRequest = await prepareCoordsFdcRequest("B62qkMsDFM5gkQwRsDqsup48f78VpCM4Ra5m9gYQMxm63UH5eXG8g6f", "0x000000000000000000000000000000000000dead");
+            const quakeEncodedRequest = await prepareDisasterFdcRequest();
+
+            if (!minaEncodedRequest || !quakeEncodedRequest) {
                 throw new Error("Failed to prepare FDC requests");
             }
 
-            const minaData = {
-                merkleProof: [] as readonly `0x${string}`[],
-                data: JSON.parse(minaDataResponse)
-            };
+            const minaFdcTxn = prepareContractCall({
+                contract: getContract({
+                    client: thirdwebClient,
+                    address: "0x48aC463d7975828989331F4De43341627b9c5f1D",
+                    chain: flareTestnet
+                }),
+                method: "function requestAttestation(bytes) payable",
+                params: [
+                    minaEncodedRequest as `0x${string}`
+                ]
+            });
+            const { transactionHash: minaFdcHash }= await sendTransaction({
+                account: wallet!,
+                transaction: minaFdcTxn
+            });
+            await waitForReceipt({
+                transactionHash: minaFdcHash,
+                client: thirdwebClient,
+                chain: flareTestnet
+            });
 
-            const quakeData = {
-                merkleProof: [] as readonly `0x${string}`[],
-                data: JSON.parse(quakeDataResponse)
-            };
+            const quakeFdcTxn = prepareContractCall({
+                contract: getContract({
+                    client: thirdwebClient,
+                    address: "0x48aC463d7975828989331F4De43341627b9c5f1D",
+                    chain: flareTestnet
+                }),
+                method: "function requestAttestation(bytes) payable",
+                params: [
+                    quakeEncodedRequest as `0x${string}`
+                ]
+            });
+            const { transactionHash: quakeFdcHash } = await sendTransaction({
+                account: wallet!,
+                transaction: quakeFdcTxn
+            });
+            await waitForReceipt({
+                transactionHash: quakeFdcHash,
+                client: thirdwebClient,
+                chain: flareTestnet
+            });
 
+            await sleep(60000 * 5);
+
+            
+
+            /*
             const transaction = prepareContractCall({
                 contract: insuranceEscrow,
                 method: "requestPayout",
@@ -159,7 +197,7 @@ export default function ClaimerPage() {
                 account: wallet!,
                 transaction: transaction
             });
-
+            */
             console.log("Claim successful:", transactionHash);
         } catch (error) {
             console.error("Error claiming insurance:", error);

@@ -12,3 +12,7 @@ export function toHex(data: string) {
 	}
 	return "0x" + result.padEnd(64, "0");
 }
+
+export function sleep(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}

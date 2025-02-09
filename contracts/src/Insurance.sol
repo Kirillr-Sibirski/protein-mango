@@ -48,6 +48,13 @@ contract InsuranceEscrow {
         address claimantAddress;
     }
 
+    struct InsuranceAndExpiry {
+        uint256 id;
+        uint256 expiryTimestamp;
+    }
+
+    mapping(address => InsuranceAndExpiry[]) public userInsuranceList; // A user is someone who has payed a premium and this mapping links a user to all insurances they have payed premium to
+
     Insurance[] private _insurances;
     // Insurance ID => Account => Timestamp
     mapping(uint256 => mapping(address => uint256)) private _premiumTimestamps;
@@ -103,9 +110,30 @@ contract InsuranceEscrow {
 
         _premiumTimestamps[id][msg.sender] = block.timestamp;
 
+        InsuranceAndExpiry memory newInsurance = InsuranceAndExpiry({
+            id: id,
+            expiryTimestamp: block.timestamp + 30 days
+        });
+        userInsuranceList[msg.sender].push(newInsurance);
+
         emit PremiumPaid(id, msg.sender);
     }
 
+    function getInsurancesByUser(address user) public returns(InsuranceAndExpiry[] memory ) {
+        require(user != address(0), "Zero address not acceptable.");
+
+        InsuranceAndExpiry[] storage insurances = userInsuranceList[msg.sender];
+
+        // First we remove expired timestamps
+        for (uint256 i = insurances.length; i > 0; i--) {
+            if (insurances[i - 1].expiryTimestamp < block.timestamp) {
+                insurances[i - 1] = insurances[insurances.length - 1];
+                insurances.pop();
+            }
+        }
+
+        return insurances;
+    }
 
     function isJsonApiProofValid(
         IJsonApi.Proof calldata _proof

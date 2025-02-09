@@ -107,9 +107,28 @@ export default function ClaimerPage() {
                 };
             });
 
+<<<<<<< Updated upstream
             // Split into available and user contracts
             setAvailableContracts(processed.filter(item => !item.premiumPaid));
             setUserContracts(processed.filter(item =>
+=======
+            // Add mock insurance
+            const mockInsurance: InsuranceDisplay = {
+                id: 999,
+                receiver: wallet.address,
+                payoutAmount: "1000",
+                location: {
+                    lat: 37.7749,
+                    lng: -122.4194,
+                },
+                premiumPaid: false,
+                premiumExpires: 0,
+            };
+
+            // Split into available and user contracts, including mock insurance in available
+            setAvailableContracts([mockInsurance, ...processed.filter(item => !item.premiumPaid)]);
+            setUserContracts(processed.filter(item => 
+>>>>>>> Stashed changes
                 userInsuranceMap.has(item.id) && userInsuranceMap.get(item.id)! > currentTime
             ));
         }
@@ -120,6 +139,24 @@ export default function ClaimerPage() {
     const handlePayPremium = async (insuranceId: number) => {
         try {
             console.log("Pay premium", insuranceId);
+            
+            // For mock insurance, just move it to user contracts
+            if (insuranceId === 999) {
+                const mockContract = availableContracts.find(c => c.id === 999);
+                if (mockContract) {
+                    const updatedMock = {
+                        ...mockContract,
+                        premiumPaid: true,
+                        premiumExpires: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
+                    };
+                    setUserContracts(prev => [...prev, updatedMock]);
+                    setAvailableContracts(prev => prev.filter(c => c.id !== 999));
+                }
+                return;
+            }
+
+            // Handle real contract premium payment here
+            // ... rest of the implementation for real contracts
         } catch (error) {
             console.error("Error paying premium:", error);
         }

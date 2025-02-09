@@ -34,7 +34,7 @@ export function InsuranceForm() {
         defaultValues: {
             radius: 1000,
             premium: 1,
-            value: 1,
+            value: 10,
             payout: 10,
             latitude: 0,
             longitude: 0
@@ -99,7 +99,7 @@ export function InsuranceForm() {
 
     return (
         <Card className="bg-background text-foreground">
-            <form onSubmit={form.handleSubmit(handleSubmit)}>  {/* Move form tag here */}
+            <form onSubmit={form.handleSubmit(handleSubmit)}>  
                 <CardHeader>
                     <CardTitle>Create New Contract</CardTitle>
                     <CardDescription>Set up a new insurance contract with your parameters</CardDescription>
@@ -236,17 +236,37 @@ export function InsuranceForm() {
                 >
                     <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full relative"
                         disabled={progress > -1}
                     >
-                        {progress > -1 ? (
-                            <span>Creating...</span>
-                        ) : (
-                            <>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Contract
-                            </>
+                        {progress > -1 && (
+                            <span className="absolute left-1/2 -translate-x-1/2">
+                                <svg
+                                    className="animate-spin h-4 w-4 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                </svg>
+                            </span>
                         )}
+                        <span className={progress > -1 ? "opacity-0" : ""}>
+                            <Plus className="h-4 w-4 mr-2 inline" />
+                            Create Contract
+                        </span>
                     </Button>
                     <div
                         className="w-full"

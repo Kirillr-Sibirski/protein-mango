@@ -315,9 +315,9 @@ export default function InsurerPage() {
                                 <Button
                                     type="submit"
                                     className="w-full"
-                                    disabled={isPending}
+                                    disabled={progress > -1}
                                 >
-                                    {isPending ? (
+                                    {progress > -1 ? (
                                         <span>Creating...</span>
                                     ) : (
                                         <>

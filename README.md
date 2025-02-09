@@ -1,3 +1,7 @@
+# Transactions/Contracts
+zkApp on Mina: https://minascan.io/devnet/account/B62qkagx7KukGoYbSzXpAXZoaGMGhtGirU1TERGNjoQsQHns4rJvQYG/zk-txs
+Insurance contract on Flare: https://coston2-explorer.flare.network/address/0x345D747ad0556FB930A289eb0b1BA54eC4e0c428?tab=txs
+Premium paid: https://coston2-explorer.flare.network/tx/0x4464e64fa4a3828d20f4a48eadcb43868509e7ed8471c46e3db9b5a9ca7715a6
 
 # Background
 Traditional insurance has several limitations:
@@ -31,11 +35,14 @@ Overall we've had a very good experience developing on the Flare chain. The docs
 # Foundry
 
 ### Deployment 
+```
 forge script "script/DeployInsurance.s.sol" --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --broadcast
-
+```
 ### Verify
+```
 forge verify-contract \  --rpc-url https://coston2-api.flare.network/ext/C/rpc \
   --verifier blockscout \
   --verifier-url 'https://coston2-explorer.flare.network/api/' \
   0x345D747ad0556FB930A289eb0b1BA54eC4e0c428 \
   src/Insurance.sol:InsuranceEscrow
+```

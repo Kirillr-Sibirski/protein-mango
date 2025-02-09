@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,69 +22,115 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import InsuranceEscrow from "@/components/ABIs/InsuranceEscrow.json";
+import { formatEther, parseEther } from "viem";
+import {
+    verifyCoords
+} from "@/lib/mina";
 
-type Contract = {
+const CONTRACT_ADDRESS = "0xYourContractAddress"; // Flare contract
+
+type Insurance = {
     id: number;
-    insurer: string;
-    radius: string;
-    premium: string;
-    totalAmount: string;
-    amountPerClaimer: string;
+    receiver: string;
+    premiumPaid: boolean;
+    premiumExpires: number;
+    payoutAmount: string;
     location: { lat: number; lng: number };
 };
 
 export default function ClaimerPage() {
+    type PremiumTimestamps = Record<number, Record<string, number>>;
+    const { address } = useAccount();
     const [searchQuery, setSearchQuery] = useState("");
+    const [isClaiming, setIsClaiming] = useState(false);
 
-    const [userContracts] = useState<Contract[]>([
-        {
-            id: 1,
-            insurer: "0x123...abc",
-            radius: "500",
-            premium: "0.1",
-            totalAmount: "1000",
-            amountPerClaimer: "100",
-            location: { lat: 40.7128, lng: -74.0060 }
-        },
-    ]);
+    // Read all insurance contracts from blockchain
+    const { data: rawInsurances } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: InsuranceEscrow,
+        functionName: "getInsurances",
+    });
 
-    const [availableContracts] = useState<Contract[]>([
-        {
-            id: 1,
-            insurer: "0x123...abc",
-            radius: "500",
-            premium: "0.1",
-            totalAmount: "1000",
-            amountPerClaimer: "100",
-            location: { lat: 40.7128, lng: -74.0060 }
-        },
-        {
-            id: 2,
-            insurer: "0x456...def",
-            radius: "1000",
-            premium: "0.2",
-            totalAmount: "2000",
-            amountPerClaimer: "200",
-            location: { lat: 34.0522, lng: -118.2437 }
-        },
-    ]);
+    const { data: premiumTimestamps } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: InsuranceEscrow,
+        functionName: "getPremiumTimestamp",
+        args: [address], // Ensure this matches your contract's requirements
+    });
 
-    const columns: ColumnDef<Contract>[] = [
+    // Cast the data to the correct type
+    const premiumData = premiumTimestamps as PremiumTimestamps | undefined;
+
+    // Process insurance data
+    const [availableContracts, setAvailableContracts] = useState<Insurance[]>([]);
+    const [userContracts, setUserContracts] = useState<Insurance[]>([]);
+
+    useEffect(() => {
+        if (rawInsurances && premiumData) {
+            const processed = (rawInsurances as any[]).map((insurance, id) => {
+                // Access the nested mapping correctly
+                const timestamp = premiumData[id]?.[address!] || 0;
+                return {
+                    id,
+                    receiver: insurance.receiver,
+                    payoutAmount: formatEther(insurance.payout),
+                    location: {
+                        lat: Number(insurance.x) / 1e6,
+                        lng: Number(insurance.y) / 1e6,
+                    },
+                    premiumPaid: timestamp > 0,
+                    premiumExpires: timestamp + 30 * 86400,
+                };
+            });
+
+            setAvailableContracts(processed);
+            setUserContracts(
+                processed.filter(
+                    (contract) =>
+                        contract.premiumPaid && contract.premiumExpires > Date.now() / 1000
+                )
+            );
+        }
+    }, [rawInsurances, premiumData, address]);
+
+    // Contract interactions
+    const { writeContract: payPremium } = useWriteContract();
+    const { writeContract: requestPayout } = useWriteContract();
+
+    const handlePayPremium = (insuranceId: number) => {
+        payPremium({
+            address: CONTRACT_ADDRESS,
+            abi: InsuranceEscrow,
+            functionName: "payPremium",
+            args: [insuranceId],
+        });
+    };
+
+    const handleClaim = async (insuranceId: number) => {
+        setIsClaiming(true);
+        try {
+            // TODO: Call verifyCoords in mina.ts
+            await requestPayout({
+                address: CONTRACT_ADDRESS,
+                abi: InsuranceEscrow,
+                functionName: "requestPayout",
+                args: [insuranceId],
+            });
+        } finally {
+            setIsClaiming(false);
+        }
+    };
+
+    // Table configuration
+    const columns: ColumnDef<Insurance>[] = [
         {
             accessorKey: "id",
-            header: "Contract ID",
+            header: "Insurance ID",
         },
         {
-            accessorKey: "insurer",
-            header: "Insurer",
-        },
-        {
-            accessorKey: "radius",
-            header: "Radius (m)",
-        },
-        {
-            accessorKey: "amountPerClaimer",
-            header: "Claim Amount (ETH)",
+            accessorKey: "payoutAmount",
+            header: "Payout Amount (ETH)",
         },
         {
             accessorKey: "location",
@@ -97,18 +144,15 @@ export default function ClaimerPage() {
         },
         {
             id: "actions",
-            cell: ({ row }) => {
-                return (
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            handleSignContract(row.id)
-                        }}
-                    >
-                        Sign This Contract
-                    </Button>
-                );
-            },
+            cell: ({ row }) => (
+                <Button
+                    variant="outline"
+                    onClick={() => handlePayPremium(row.original.id)}
+                    disabled={row.original.premiumPaid}
+                >
+                    {row.original.premiumPaid ? "Premium Paid" : "Pay Premium"}
+                </Button>
+            ),
         },
     ];
 
@@ -119,52 +163,14 @@ export default function ClaimerPage() {
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        state: {
-            globalFilter: searchQuery,
-        },
+        state: { globalFilter: searchQuery },
         onGlobalFilterChange: setSearchQuery,
     });
-
-    const handleClaim = (contractId: any, insurerAddress: string) => {
-        console.log("Claiming contract:", contractId);
-        console.log("Insurer address:", insurerAddress);
-
-        // Check if the Geolocation API is supported by the browser
-        if ("geolocation" in navigator) {
-            // Get the current position
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    // Success callback
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
-                    console.log("GPS Coordinates:", { latitude, longitude });
-
-                    // TODO: Mint Mina ZK proof
-                },
-                (error) => {
-                    // Error callback
-                    console.error("Error getting GPS coordinates:", error);
-                }
-            );
-        } else {
-            console.error("Geolocation is not supported by this browser.");
-        }
-    };
-
-    const handlePremium = (contractId: any) => {
-        console.log("Claiming contract:", contractId);
-        // TODO: Add claim logic
-    };
-
-    const handleSignContract = (contractId: any) => {
-        console.log("Creating contract:", contractId);
-        // TODO: Add contract creation logic - call Flare function
-    };
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column - User Contracts */}
+                {/* My Active Contracts */}
                 <div className="lg:col-span-1">
                     <section className="mb-8">
                         <h2 className="text-3xl font-bold mb-6">My Contracts</h2>
@@ -175,29 +181,25 @@ export default function ClaimerPage() {
                                 {userContracts.map((contract) => (
                                     <Card key={contract.id} className="bg-background text-foreground">
                                         <CardHeader>
-                                            <CardTitle>Contract #{contract.id}</CardTitle>
+                                            <CardTitle>Insurance #{contract.id}</CardTitle>
                                             <div className="text-sm text-muted-foreground">
-                                                Insurer: {contract.insurer}
+                                                Valid until: {new Date(contract.premiumExpires * 1000).toLocaleDateString()}
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-2">
                                             <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Claim Amount:</span>
-                                                <span>{contract.amountPerClaimer} ETH</span>
+                                                <span className="text-muted-foreground">Payout Amount:</span>
+                                                <span>{contract.payoutAmount} ETH</span>
                                             </div>
                                         </CardContent>
                                         <CardFooter>
                                             <Button
-                                                onClick={() => handlePremium(contract.id)}
+                                                onClick={() => handleClaim(contract.id)}
                                                 className="w-full"
+                                                disabled={contract.premiumExpires < Date.now() / 1000 || isClaiming}
                                             >
-                                                Pay the Premium
-                                            </Button>
-                                            <Button
-                                                onClick={() => handleClaim(contract.id, contract.insurer)}
-                                                className="w-full"
-                                            >
-                                                Claim Now
+                                                {isClaiming ? "Verifying..." :
+                                                    contract.premiumExpires < Date.now() / 1000 ? "Expired" : "Claim Now"}
                                             </Button>
                                         </CardFooter>
                                     </Card>
@@ -207,7 +209,7 @@ export default function ClaimerPage() {
                     </section>
                 </div>
 
-                {/* Right Column - Available Contracts */}
+                {/* Available Contracts */}
                 <div className="lg:col-span-2">
                     <Card className="bg-background text-foreground">
                         <CardHeader>
@@ -231,10 +233,7 @@ export default function ClaimerPage() {
                                         <TableRow key={headerGroup.id}>
                                             {headerGroup.headers.map((header) => (
                                                 <TableHead key={header.id}>
-                                                    {flexRender(
-                                                        header.column.columnDef.header,
-                                                        header.getContext()
-                                                    )}
+                                                    {flexRender(header.column.columnDef.header, header.getContext())}
                                                 </TableHead>
                                             ))}
                                         </TableRow>
@@ -243,26 +242,17 @@ export default function ClaimerPage() {
                                 <TableBody>
                                     {table.getRowModel().rows?.length ? (
                                         table.getRowModel().rows.map((row) => (
-                                            <TableRow
-                                                key={row.id}
-                                                data-state={row.getIsSelected() && "selected"}
-                                            >
+                                            <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                                                 {row.getVisibleCells().map((cell) => (
                                                     <TableCell key={cell.id}>
-                                                        {flexRender(
-                                                            cell.column.columnDef.cell,
-                                                            cell.getContext()
-                                                        )}
+                                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                     </TableCell>
                                                 ))}
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell
-                                                colSpan={columns.length}
-                                                className="h-24 text-center"
-                                            >
+                                            <TableCell colSpan={columns.length} className="h-24 text-center">
                                                 No results.
                                             </TableCell>
                                         </TableRow>

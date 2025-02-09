@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Kirillr-Sibirski/protein-mango/main/frontend/public/logo.png" alt="Protein Mango Logo" width="200">
+</p>
+
+
 # Transactions/Contracts
 - zkApp on Mina: https://minascan.io/devnet/account/B62qkagx7KukGoYbSzXpAXZoaGMGhtGirU1TERGNjoQsQHns4rJvQYG/zk-txs
 - Insurance contract on Flare: https://coston2-explorer.flare.network/address/0x345D747ad0556FB930A289eb0b1BA54eC4e0c428?tab=txs

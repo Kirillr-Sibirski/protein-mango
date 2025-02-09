@@ -21,13 +21,18 @@ export async function deployCoords( // Called when the insurer creates a new ins
         const zkAppPrivateKey = PrivateKey.random();
         const zkAppInstance = new Coords(zkAppPrivateKey.toPublicKey());
 
-        const deployTxn = await Mina.transaction(devAddress, async () => {
+        const deployTxn = await Mina.transaction({
+            sender: devAddress,
+            fee: 0.1 * (10 ** 9),
+        }, async () => {
             AccountUpdate.fundNewAccount(devAddress);
+            await Coords.compile();
             await zkAppInstance.deploy();
             await zkAppInstance.initialize(Field(x), Field(y), Field(radius));
         });
         await deployTxn.prove();
-        await deployTxn.sign([devPrivateKey, zkAppPrivateKey]).send();
+        const result = await deployTxn.sign([devPrivateKey, zkAppPrivateKey]).send();
+        await result.safeWait();
 
         return zkAppInstance.address.toBase58();
     } catch (error) {
@@ -42,11 +47,14 @@ export async function verifyCoords( // Called when the claimant makes a claim
     x: bigint, 
     y: bigint, 
     account: string
-): Promise<boolean> {
+): Promise<string | undefined> {
     try {
         const zkAppInstance = new Coords(PublicKey.fromBase58(appAddress));
 
-        const verifyTxn = await Mina.transaction(devAddress, async () => {
+        const verifyTxn = await Mina.transaction({
+            sender: devAddress,
+            fee: 0.1 * (10 ** 9),
+        }, async () => {
             await zkAppInstance.verifyCoords(
                 Field(x),
                 Field(y),
@@ -54,12 +62,13 @@ export async function verifyCoords( // Called when the claimant makes a claim
             );
         });
         await verifyTxn.prove();
-        await verifyTxn.sign([devPrivateKey]).send();
+        const result = await verifyTxn.sign([devPrivateKey]).send();
+        await result.safeWait();
 
-        return true;
+        return result.hash;
     } catch (error) {
         console.error(error);
     }
 
-    return false;
+    return undefined;
 }

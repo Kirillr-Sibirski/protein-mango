@@ -33,7 +33,6 @@ const senderAccount = Local.testAccounts[1];
 const senderKey = senderAccount.key;
 */
 
-/*
 const dev = PrivateKey.fromBase58("EKE8NcPy7gH3zV9iGSTetT47UeXJKB3QBHXJTh2wHeHPuvDqUjEG")
 
 const zkAppPrivateKey = PrivateKey.random();
@@ -83,7 +82,6 @@ console.log(events[0].event.data)
 
 const account: string = '0x' + BigInt(events[0].event.data.toString()).toString(16);
 console.log(account);
-*/
 
 /*
 const getPosition = async () => {

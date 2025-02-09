@@ -1,67 +1,72 @@
 "use client";
 
-import { createThirdwebClient, defineChain, getContract, prepareContractCall, sendTransaction } from "thirdweb";
-import { ConnectButton, useActiveAccount } from "thirdweb/react";
+import { InsuranceForm } from "@/components/insurance-form";
+import { insuranceEscrow } from "@/components/thirdweb-button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { MapPin } from "lucide-react";
+import { toEther } from "thirdweb";
+import { useReadContract } from "thirdweb/react";
 
 export default function Home() {
-	const activeAccount = useActiveAccount();
-
-	const handleTxn = async () => {
-		if (!activeAccount) {
-			return;
-		}
-
-		const contract = getContract({
-			client: createThirdwebClient({
-				clientId: "46f89a93ab6373445b8219c6267a3c0c"
-			}),
-			abi: [{ "inputs": [], "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "uint256", "name": "id", "type": "uint256" }, { "indexed": true, "internalType": "address", "name": "receiver", "type": "address" }, { "indexed": true, "internalType": "uint256", "name": "payout", "type": "uint256" }], "name": "ClaimPaid", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "uint256", "name": "id", "type": "uint256" }], "name": "NewInsurance", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "uint256", "name": "id", "type": "uint256" }, { "indexed": true, "internalType": "address", "name": "payer", "type": "address" }], "name": "PremiumPaid", "type": "event" }, { "inputs": [{ "internalType": "uint256", "name": "lat1", "type": "uint256" }, { "internalType": "uint256", "name": "lon1", "type": "uint256" }, { "internalType": "uint256", "name": "lat2", "type": "uint256" }, { "internalType": "uint256", "name": "lon2", "type": "uint256" }], "name": "calculateFlatEarthDistance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "pure", "type": "function" }, { "inputs": [], "name": "getInsurances", "outputs": [{ "components": [{ "internalType": "address", "name": "receiver", "type": "address" }, { "internalType": "uint256", "name": "premium", "type": "uint256" }, { "internalType": "uint256", "name": "payout", "type": "uint256" }, { "internalType": "uint256", "name": "long", "type": "uint256" }, { "internalType": "uint256", "name": "lat", "type": "uint256" }, { "internalType": "uint256", "name": "radius", "type": "uint256" }, { "internalType": "string", "name": "snarkId", "type": "string" }, { "internalType": "uint256", "name": "value", "type": "uint256" }], "internalType": "struct InsuranceEscrow.Insurance[]", "name": "", "type": "tuple[]" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }, { "internalType": "address", "name": "account", "type": "address" }], "name": "getPremiumTimestamp", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "components": [{ "internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]" }, { "components": [{ "internalType": "bytes32", "name": "attestationType", "type": "bytes32" }, { "internalType": "bytes32", "name": "sourceId", "type": "bytes32" }, { "internalType": "uint64", "name": "votingRound", "type": "uint64" }, { "internalType": "uint64", "name": "lowestUsedTimestamp", "type": "uint64" }, { "components": [{ "internalType": "string", "name": "url", "type": "string" }, { "internalType": "string", "name": "postprocessJq", "type": "string" }, { "internalType": "string", "name": "abi_signature", "type": "string" }], "internalType": "struct IJsonApi.RequestBody", "name": "requestBody", "type": "tuple" }, { "components": [{ "internalType": "bytes", "name": "abi_encoded_data", "type": "bytes" }], "internalType": "struct IJsonApi.ResponseBody", "name": "responseBody", "type": "tuple" }], "internalType": "struct IJsonApi.Response", "name": "data", "type": "tuple" }], "internalType": "struct IJsonApi.Proof", "name": "_proof", "type": "tuple" }], "name": "isJsonApiProofValid", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "receiver", "type": "address" }, { "internalType": "uint256", "name": "premium", "type": "uint256" }, { "internalType": "uint256", "name": "payout", "type": "uint256" }, { "internalType": "uint256", "name": "x", "type": "uint256" }, { "internalType": "uint256", "name": "y", "type": "uint256" }, { "internalType": "uint256", "name": "radius", "type": "uint256" }, { "internalType": "string", "name": "snarkId", "type": "string" }], "name": "newInsurance", "outputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }], "name": "payPremium", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "components": [{ "internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]" }, { "components": [{ "internalType": "bytes32", "name": "attestationType", "type": "bytes32" }, { "internalType": "bytes32", "name": "sourceId", "type": "bytes32" }, { "internalType": "uint64", "name": "votingRound", "type": "uint64" }, { "internalType": "uint64", "name": "lowestUsedTimestamp", "type": "uint64" }, { "components": [{ "internalType": "string", "name": "url", "type": "string" }, { "internalType": "string", "name": "postprocessJq", "type": "string" }, { "internalType": "string", "name": "abi_signature", "type": "string" }], "internalType": "struct IJsonApi.RequestBody", "name": "requestBody", "type": "tuple" }, { "components": [{ "internalType": "bytes", "name": "abi_encoded_data", "type": "bytes" }], "internalType": "struct IJsonApi.ResponseBody", "name": "responseBody", "type": "tuple" }], "internalType": "struct IJsonApi.Response", "name": "data", "type": "tuple" }], "internalType": "struct IJsonApi.Proof", "name": "minaData", "type": "tuple" }, { "components": [{ "internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]" }, { "components": [{ "internalType": "bytes32", "name": "attestationType", "type": "bytes32" }, { "internalType": "bytes32", "name": "sourceId", "type": "bytes32" }, { "internalType": "uint64", "name": "votingRound", "type": "uint64" }, { "internalType": "uint64", "name": "lowestUsedTimestamp", "type": "uint64" }, { "components": [{ "internalType": "string", "name": "url", "type": "string" }, { "internalType": "string", "name": "postprocessJq", "type": "string" }, { "internalType": "string", "name": "abi_signature", "type": "string" }], "internalType": "struct IJsonApi.RequestBody", "name": "requestBody", "type": "tuple" }, { "components": [{ "internalType": "bytes", "name": "abi_encoded_data", "type": "bytes" }], "internalType": "struct IJsonApi.ResponseBody", "name": "responseBody", "type": "tuple" }], "internalType": "struct IJsonApi.Response", "name": "data", "type": "tuple" }], "internalType": "struct IJsonApi.Proof", "name": "quakeData", "type": "tuple" }, { "internalType": "uint256", "name": "id", "type": "uint256" }], "name": "requestPayout", "outputs": [], "stateMutability": "nonpayable", "type": "function" }],
-			address: "0x345D747ad0556FB930A289eb0b1BA54eC4e0c428",
-			chain: defineChain({
-				id: 114,
-				rpc: "https://coston2-api.flare.network/ext/C/rpc"
-			}),
-		});
-
-		const transaction = prepareContractCall({
-			contract,
-			method: "newInsurance",
-			params: [
-				activeAccount.address,
-				1n,
-				1n,
-				1n,
-				1n,
-				1n,
-				"test"
-			],
-			value: 100n
-		});
-
-		const { transactionHash } = await sendTransaction({
-			account: activeAccount,
-			transaction: transaction
-		});
-		console.log(transactionHash)
-	};
+	const { data: insurances } = useReadContract({
+		contract: insuranceEscrow,
+		method: "getInsurances",
+	});
 
 	return (
-		<div>
-			<ConnectButton
-				client={createThirdwebClient({
-					clientId: "46f89a93ab6373445b8219c6267a3c0c"
-				})}
-				chain={defineChain({
-					id: 114,
-					rpc: "https://coston2-api.flare.network/ext/C/rpc"
-				})}
-			/>
-			<button
-				className="bg-gray-400"
-				onClick={handleTxn}
-			>
-				Txn
-			</button>
+		<div className="container mx-auto px-4 py-8 min-h-screen">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+				<div className="lg:col-span-1">
+					<section className="mb-8">
+						<h2 className="text-3xl font-bold mb-6">Active Contracts</h2>
+						{!insurances || insurances.length === 0 ? (
+							<div className="text-muted-foreground">No open contracts</div>
+						) : (
+							<div className="grid grid-cols-1 gap-6">
+								{insurances.map((insurance, index) => (
+									<Card key={index} className="bg-background text-foreground">
+										<CardHeader>
+											<CardTitle>Contract #{index + 1}</CardTitle>
+											<CardDescription>Active Insurance Contract</CardDescription>
+										</CardHeader>
+										<CardContent>
+											<div className="space-y-2">
+												{/* Contract details rendering */}
+												<div className="flex justify-between">
+													<span className="text-muted-foreground">Radius:</span>
+													<span>{insurance.radius.toString()}m</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-muted-foreground">Premium:</span>
+													<span>{toEther(insurance.premium)} FLR</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-muted-foreground">Total Amount:</span>
+													<span>{toEther(insurance.value)} FLR</span>
+												</div>
+												<div className="flex justify-between">
+													<span className="text-muted-foreground">Per Claimer:</span>
+													<span>{toEther(insurance.payout)} FLR</span>
+												</div>
+												<div className="flex items-center gap-2 text-muted-foreground">
+													<MapPin className="h-4 w-4" />
+													<span>
+														{(Number(insurance.lat) / 1e6).toFixed(4)},
+														{(Number(insurance.long) / 1e6).toFixed(4)}
+													</span>
+												</div>
+											</div>
+										</CardContent>
+									</Card>
+								))}
+							</div>
+						)}
+					</section>
+				</div>
+				<div className="lg:col-span-2">
+					<InsuranceForm />
+				</div>
+			</div>
 		</div>
 	);
 }

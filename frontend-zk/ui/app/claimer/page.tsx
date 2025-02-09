@@ -25,8 +25,8 @@ import {
 import InsuranceEscrow from "@/components/ABIs/InsuranceEscrow.json";
 import { formatEther, parseEther } from "viem";
 import {
-    verifyCoords
-} from "@/lib/mina";
+    prepareCoordsFdcRequest, prepareDisasterFdcRequest
+} from "@/lib/flare";
 
 const CONTRACT_ADDRESS = "0xYourContractAddress"; // Flare contract
 
@@ -111,12 +111,8 @@ export default function ClaimerPage() {
         setIsClaiming(true);
         try {
             // TODO: Call verifyCoords in mina.ts
-            await requestPayout({
-                address: CONTRACT_ADDRESS,
-                abi: InsuranceEscrow,
-                functionName: "requestPayout",
-                args: [insuranceId],
-            });
+            await prepareCoordsFdcRequest(CONTRACT_ADDRESS, address!);
+            await prepareDisasterFdcRequest();
         } finally {
             setIsClaiming(false);
         }

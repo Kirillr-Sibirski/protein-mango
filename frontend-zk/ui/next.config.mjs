@@ -11,6 +11,7 @@ const nextConfig = {
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
+        'three/examples/jsm/loaders/GLTFLoader': path.resolve(__dirname, 'node_modules/three/examples/jsm/loaders/GLTFLoader.js'),
         o1js: path.resolve(__dirname, 'node_modules/o1js/dist/web/index.js'),
         three: path.resolve(__dirname, 'node_modules/three/build/three.module.js')
       };
@@ -19,7 +20,6 @@ const nextConfig = {
     return config;
   },
   // To enable o1js for the web, we must set the COOP and COEP headers.
-  // See here for more information: https://docs.minaprotocol.com/zkapps/how-to-write-a-zkapp-ui#enabling-coop-and-coep-headers
   async headers() {
     return [
       {
@@ -34,7 +34,6 @@ const nextConfig = {
             value: 'require-corp',
           },
         ],
-
       },
     ];
   },

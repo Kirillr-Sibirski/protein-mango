@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {console} from "forge-std/Test.sol";
+//import {console} from "forge-std/Test.sol";
 
 //import {IERC20} from "@openzeppelin/token/ERC20/IERC20.sol";
-import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
+//import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 
 //import {IJsonApiVerification} from "@flarenetwork/flare-periphery-contracts/coston/IJsonApiVerification.sol";
@@ -15,6 +15,7 @@ import {IJsonApi} from "flare-periphery/src/coston/IJsonApi.sol";
 import {ContractRegistry} from "flare-periphery/src/coston/ContractRegistry.sol";
 
 contract InsuranceEscrow {
+
     event NewInsurance(uint256 indexed id);
 
     event PremiumPaid(uint256 indexed id, address indexed payer);
@@ -32,7 +33,7 @@ contract InsuranceEscrow {
         uint256 long;
         uint256 lat;
         uint256 radius;
-        bytes32 snarkId;
+        string snarkId;
         uint256 value;
     }
 
@@ -71,7 +72,7 @@ contract InsuranceEscrow {
         uint256 x,
         uint256 y,
         uint256 radius,
-        bytes32 snarkId
+        string calldata snarkId
     ) external payable returns (uint256 id) {
         if (msg.value < payout) {
             revert("");
@@ -123,19 +124,21 @@ contract InsuranceEscrow {
         require(isJsonApiProofValid(minaData), "Invalid Mina proof");
         require(isJsonApiProofValid(quakeData), "Invalid quake proof");
 
-        // TODO: Query disaster API
+        // Query disaster API
         QuakeDataTransportObject memory qdto = abi.decode(
             quakeData.data.responseBody.abi_encoded_data,
             (QuakeDataTransportObject)
         );
-        uint256 distance = calculateFlatEarthDistance(qdto.long, qdto.lat, _insurances);
+        uint256 distance = calculateFlatEarthDistance(qdto.long, qdto.lat, _insurances[id].long, _insurances[id].lat);
+        require(distance < _insurances[id].radius, "Claimant coordinates not inside insurance area.");
 
-        // TODO: Query zkProof of location on Mina
+        // Query zkProof of location on Mina
         MinaDataTransportObject memory mdto = abi.decode(
             minaData.data.responseBody.abi_encoded_data,
             (MinaDataTransportObject)
         );
-        address claimantAddress = mdto.claimantAddress;
+        require(mdto.claimantAddress == msg.sender);
+
 
         _insurances[id].value -= _insurances[id].payout;
         _premiumTimestamps[id][msg.sender] = 0;

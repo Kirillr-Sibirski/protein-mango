@@ -35,9 +35,8 @@ contract InsuranceEscrowTest is Test {
             "Distance calculation is incorrect"
         );
 
-        //61605000000000000000000000
-        //6100000000000000000000000
-
         return true;
     }
+
+    
 }

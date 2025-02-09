@@ -48,13 +48,13 @@ export default function ClaimerPage() {
     // Read all insurance contracts from blockchain
     const { data: rawInsurances } = useReadContract({
         address: CONTRACT_ADDRESS,
-        abi: InsuranceEscrow,
+        abi: InsuranceEscrow.abi,
         functionName: "getInsurances",
     });
 
     const { data: premiumTimestamps } = useReadContract({
         address: CONTRACT_ADDRESS,
-        abi: InsuranceEscrow,
+        abi: InsuranceEscrow.abi,
         functionName: "getPremiumTimestamp",
         args: [address], // Ensure this matches your contract's requirements
     });
@@ -101,7 +101,7 @@ export default function ClaimerPage() {
     const handlePayPremium = (insuranceId: number) => {
         payPremium({
             address: CONTRACT_ADDRESS,
-            abi: InsuranceEscrow,
+            abi: InsuranceEscrow.abi,
             functionName: "payPremium",
             args: [insuranceId],
         });

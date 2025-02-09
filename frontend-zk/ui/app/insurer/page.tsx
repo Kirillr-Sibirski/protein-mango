@@ -43,7 +43,7 @@ export default function InsurerPage() {
     // Read contract data
     const { data: insuranceData } = useReadContract({
         address: CONTRACT_ADDRESS,
-        abi: InsuranceEscrow,
+        abi: InsuranceEscrow.abi,
         functionName: "getInsurances",
         query: {
             refetchInterval: 3000,
@@ -124,7 +124,7 @@ export default function InsurerPage() {
             // Create insurance contract with native token value
             writeContract({
                 address: CONTRACT_ADDRESS,
-                abi: InsuranceEscrow,
+                abi: InsuranceEscrow.abi,
                 functionName: "newInsurance",
                 args: [
                     address,

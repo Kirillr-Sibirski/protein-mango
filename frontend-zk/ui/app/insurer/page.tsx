@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import InsuranceEscrow from "@/components/ABIs/InsuranceEscrow.json";
 import { formatEther, parseEther } from "viem";
 import { deployCoords } from "@/lib/mina";
 import bs58 from "bs58";
+import ZkappWorkerClient from "@/lib/zkappWorkerClient";
+import ModernMultiStageLoader from "@/components/multi-stage-loader";
 
 type Insurance = {
     receiver: `0x${string}`;
@@ -26,14 +28,16 @@ type Insurance = {
 const CONTRACT_ADDRESS = "0xYourContractAddress" as const; // Flare contract
 
 export default function InsurerPage() {
+    const [progress, setProgress] = useState(-1);
+
     const { address } = useAccount();
     const [formData, setFormData] = useState({
-        radius: "",
-        premium: "",
-        totalAmount: "",
-        amountPerClaimer: "",
-        lat: "",
-        lng: ""
+        radius: "1000",
+        premium: "0.01",
+        totalAmount: "1",
+        amountPerClaimer: "0.1",
+        lat: "0",
+        lng: "0"
     });
 
     // Read contract data
@@ -85,26 +89,34 @@ export default function InsurerPage() {
             return;
         }
 
-        try {
-            // Convert form values
-            const radiusBigInt = BigInt(Math.floor(parseFloat(formData.radius)));
-            const premiumInWei = parseEther(formData.premium);
-            const amountPerClaimerInWei = parseEther(formData.amountPerClaimer);
-            const totalAmountInWei = parseEther(formData.totalAmount);
-            const latitudeBigInt = BigInt(Math.floor(parseFloat(formData.lat) * 1e6));
-            const longitudeBigInt = BigInt(Math.floor(parseFloat(formData.lng) * 1e6));
+        const radiusBigInt = BigInt(Math.floor(parseFloat(formData.radius)));
+        const premiumInWei = parseEther(formData.premium);
+        const amountPerClaimerInWei = parseEther(formData.amountPerClaimer);
+        const totalAmountInWei = parseEther(formData.totalAmount);
+        const latitudeBigInt = BigInt(Math.floor(parseFloat(formData.lat) * 1e6));
+        const longitudeBigInt = BigInt(Math.floor(parseFloat(formData.lng) * 1e6));
 
-            // Deploy Mina zkApp
-            const minaAppAddress = await deployCoords(
+        setProgress(0);
+
+        let minaAppAddress;
+        try {
+            minaAppAddress = await (new ZkappWorkerClient()).deployCoords(
                 latitudeBigInt,
                 longitudeBigInt,
                 radiusBigInt
             );
+        } catch (error) {
+            console.error(error);
+        }
+        if (!minaAppAddress) {
+            console.error("Failed to deploy Mina zkApp");
+            setProgress(-1);
+            return;
+        }
 
-            if (!minaAppAddress) {
-                throw new Error("Failed to deploy Mina zkApp");
-            }
+        setProgress(1);
 
+        try {
             // Convert Mina address to bytes32 for Ethereum
             const decoded = bs58.decode(minaAppAddress);
             const snarkId = `0x${Buffer.from(decoded).toString('hex').slice(0, 64)}` as `0x${string}`;
@@ -207,7 +219,7 @@ export default function InsurerPage() {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="radius">Coverage Radius (meters)</Label>
+                                            <Label htmlFor="radius">Coverage radius (meters)</Label>
                                             <Input
                                                 id="radius"
                                                 type="number"
@@ -218,7 +230,7 @@ export default function InsurerPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="premium">Daily Premium (FLR)</Label>
+                                            <Label htmlFor="premium">Monthly premium (FLR)</Label>
                                             <Input
                                                 id="premium"
                                                 type="number"
@@ -233,7 +245,7 @@ export default function InsurerPage() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="totalAmount">Total Amount (FLR)</Label>
+                                            <Label htmlFor="totalAmount">Total value (FLR)</Label>
                                             <Input
                                                 id="totalAmount"
                                                 type="number"
@@ -245,7 +257,7 @@ export default function InsurerPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="amountPerClaimer">Amount per Claimer (FLR)</Label>
+                                            <Label htmlFor="amountPerClaimer">Claim payout (FLR)</Label>
                                             <Input
                                                 id="amountPerClaimer"
                                                 type="number"
@@ -297,7 +309,9 @@ export default function InsurerPage() {
                                     </div>
                                 </div>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter
+                                className="flex flex-col space-y-4"
+                            >
                                 <Button
                                     type="submit"
                                     className="w-full"
@@ -312,6 +326,13 @@ export default function InsurerPage() {
                                         </>
                                     )}
                                 </Button>
+                                <div
+                                    className="w-full"
+                                >
+                                    <ModernMultiStageLoader
+                                        stageIndex={progress}
+                                    />
+                                </div>
                             </CardFooter>
                         </form>
                     </Card>

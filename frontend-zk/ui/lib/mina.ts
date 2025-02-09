@@ -18,16 +18,16 @@ export async function deployCoords( // Called when the insurer creates a new ins
     radius: bigint
 ): Promise<string | undefined> {
     try {
-        const zkAppPrivateKey = PrivateKey.random();
-        const zkAppInstance = new Coords(zkAppPrivateKey.toPublicKey());
+        // const zkAppPrivateKey = PrivateKey.random();
+        // const zkAppInstance = new Coords(zkAppPrivateKey.toPublicKey());
 
-        const deployTxn = await Mina.transaction(devAddress, async () => {
-            AccountUpdate.fundNewAccount(devAddress);
-            await zkAppInstance.deploy();
-            await zkAppInstance.initialize(Field(x), Field(y), Field(radius));
-        });
-        await deployTxn.prove();
-        await deployTxn.sign([devPrivateKey, zkAppPrivateKey]).send();
+        // const deployTxn = await Mina.transaction(devAddress, async () => {
+        //     AccountUpdate.fundNewAccount(devAddress);
+        //     await zkAppInstance.deploy();
+        //     await zkAppInstance.initialize(Field(x), Field(y), Field(radius));
+        // });
+        // await deployTxn.prove();
+        // await deployTxn.sign([devPrivateKey, zkAppPrivateKey]).send();
 
         return zkAppInstance.address.toBase58();
     } catch (error) {
@@ -44,19 +44,19 @@ export async function verifyCoords( // Called when the claimant makes a claim
     account: string
 ): Promise<boolean> {
     try {
-        const zkAppInstance = new Coords(PublicKey.fromBase58(appAddress));
+        // const zkAppInstance = new Coords(PublicKey.fromBase58(appAddress));
 
-        const verifyTxn = await Mina.transaction(devAddress, async () => {
-            await zkAppInstance.verifyCoords(
-                Field(x),
-                Field(y),
-                Field(account)
-            );
-        });
-        await verifyTxn.prove();
-        await verifyTxn.sign([devPrivateKey]).send();
+        // const verifyTxn = await Mina.transaction(devAddress, async () => {
+        //     await zkAppInstance.verifyCoords(
+        //         Field(x),
+        //         Field(y),
+        //         Field(account)
+        //     );
+        // });
+        // await verifyTxn.prove();
+        // await verifyTxn.sign([devPrivateKey]).send();
 
-        return true;
+        // return true;
     } catch (error) {
         console.error(error);
     }

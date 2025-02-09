@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 export default function ThreeScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -13,67 +14,116 @@ export default function ThreeScene() {
 
     // Initialize scene
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    
+    // Adjust camera FOV and position for right-side placement
+    const camera = new THREE.PerspectiveCamera(10, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       alpha: true,
-      antialias: true
+      antialias: true,
+      powerPreference: "high-performance"
     });
 
-    camera.position.z = 2;
+    // Adjust camera position
+    camera.position.z = 1;
+    camera.position.x = -0.2; // Move camera slightly left to shift view right
+    
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
     
     sceneRef.current = scene;
     cameraRef.current = camera;
     rendererRef.current = renderer;
 
-    // Add objects
-    const geometry = new THREE.IcosahedronGeometry(1, 1);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0xff7e33,
-      wireframe: true
-    });
-    const shape = new THREE.Mesh(geometry, material);
-    scene.add(shape);
+    // Enhanced lighting setup
+    const ambientLight = new THREE.AmbientLight(0xffffff,  6.0);
+    scene.add(ambientLight);
+    
+    const pointLight1 = new THREE.PointLight(0xffffff, 5.0);
+    pointLight1.position.set(10, 10, 10);
+    scene.add(pointLight1);
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const pointLight = new THREE.PointLight(0xff7e33, 1);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    const pointLight2 = new THREE.PointLight(0xffffff, 10.5);
+    pointLight2.position.set(-10, -10, 5);
+    scene.add(pointLight2);
 
-    // Animation
-    const animate = () => {
-      requestAnimationFrame(animate);
-      shape.rotation.x += 0.002;
-      shape.rotation.y += 0.006;
-      renderer.render(scene, camera);
-    };
-    animate();
+    // Load 3D model
+    const loader = new GLTFLoader();
+    let mango: THREE.Group;
+
+    loader.load(
+      '/models/mango.glb',
+      (gltf) => {
+        mango = gltf.scene;
+        mango.scale.set(1.3, 1.3, 1.3);
+        
+        // Position the mango on the right side
+        mango.position.x = -0.15; // Move mango to the right
+        // mango.position.y = 0.1; // Slightly adjust vertical position if needed
+        
+        // Make materials lighter if they exist
+        mango.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => {
+                  mat.transparent = true;
+                  mat.opacity = 0.8;
+                });
+              } else {
+                child.material.transparent = true;
+                child.material.opacity = 0.8;
+              }
+            }
+          }
+        });
+
+        scene.add(mango);
+
+        // Animation
+        const animate = () => {
+          requestAnimationFrame(animate);
+          if (mango) {
+            mango.rotation.y += 0.01;
+          }
+          renderer.render(scene, camera);
+        };
+        animate();
+      },
+      (progress) => {
+        console.log('Loading model...', (progress.loaded / progress.total * 100) + '%');
+      },
+      (error) => {
+        console.error('Error loading model:', error);
+      }
+    );
 
     // Event handlers
     const handleResize = () => {
-      camera.aspect = window.innerWidth/window.innerHeight;
+      if (!canvasRef.current) return;
+      
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-
-    const handleScroll = () => {
-      camera.position.z = 2 - window.scrollY * 0.002;
+      renderer.setSize(width, height);
     };
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll);
+
+    // Initial resize call
+    handleResize();
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
       renderer.dispose();
     };
   }, []);
 
   return (
-    <div className="fixed inset-0 -z-10">
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
       <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );

@@ -1,12 +1,12 @@
-// app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/navigation/header';
 import { Footer } from '@/components/navigation/footer';
 import { Web3Provider } from '@/components/providers/WagmiProvider';
+import { Background } from "@/components/background";
 import dynamic from 'next/dynamic';
 
-// Dynamically import the ThreeScene component with SSR disabled
+// Dynamically import ThreeScene with SSR disabled
 const ThreeScene = dynamic(() => import('@/components/three-scene'), {
   ssr: false,
 });
@@ -23,14 +23,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <ThreeScene />
+      <body className="min-h-screen bg-background text-foreground">
         <Web3Provider>
           <ClientLayout>
-            {/* Your main content sits on top */}
-            <div className="relative z-0">
+            <div className="relative z-10">
               {children}
-            </div></ClientLayout>
+            </div>
+          </ClientLayout>
         </Web3Provider>
       </body>
     </html>

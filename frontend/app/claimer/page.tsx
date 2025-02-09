@@ -6,7 +6,7 @@ import { insuranceEscrow } from "@/components/thirdweb-button";
 import { Card, CardHeader, CardTitle, CardFooter, CardDescription, CardContent } from "@/components/ui/card";
 import { MapPin, Search } from "lucide-react";
 import { toEther } from "thirdweb";
-import { useReadContract } from "thirdweb/react";
+import { useActiveAccount, useReadContract, useSendAndConfirmTransaction } from "thirdweb/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,96 +29,118 @@ import {
 import {
     prepareCoordsFdcRequest, prepareDisasterFdcRequest
 } from "@/lib/flare";
+import { useActiveWallet } from "thirdweb/react";
 
-const CONTRACT_ADDRESS = "0x345D747ad0556FB930A289eb0b1BA54eC4e0c428"; // Flare contract
+const CONTRACT_ADDRESS = "0x5B4eBf8e7f0F4B2bCfBb0F1CfBb0F1CfBb0F1CfB";
 
-type Insurance = {
+interface ContractInsurance {
+    receiver: string;
+    premium: bigint;
+    payout: bigint;
+    long: bigint;
+    lat: bigint;
+    radius: bigint;
+    snarkId: string;
+    value: bigint;
+}
+
+interface InsuranceDisplay {
     id: number;
     receiver: string;
-    premiumPaid: boolean;
-    premiumExpires: number;
     payoutAmount: string;
     location: { lat: number; lng: number };
-};
+    premiumPaid: boolean;
+    premiumExpires: number;
+    // you can add any additional fields needed for display here
+}
 
 export default function ClaimerPage() {
-    type PremiumTimestamps = Record<number, Record<string, number>>;
+    // State for search query, contract statuses, etc.
     const [searchQuery, setSearchQuery] = useState("");
     const [isClaiming, setIsClaiming] = useState(false);
+    const [availableContracts, setAvailableContracts] = useState<InsuranceDisplay[]>([]);
+    const [userContracts, setUserContracts] = useState<InsuranceDisplay[]>([]);
 
-    // // Read all insurance contracts from blockchain
-	// const { data: insurances } = useReadContract({
-	// 	contract: insuranceEscrow,
-	// 	method: "getInsurances",
-	// });
-    
-    const { data: premiumTimestamps } = useReadContract({
+    // Fetch raw insurances from the contract
+    const { data: rawInsurances } = useReadContract({
         contract: insuranceEscrow,
-        method: "getPremiumTimestamp",
-        params: [id, address], // This should be the address of the user
-    });
+        method: "getInsurances",
+    }) as { data: ContractInsurance[] | undefined };
 
-    // Cast the data to the correct type
-    const premiumData = premiumTimestamps as PremiumTimestamps | undefined;
+    // Get the user's wallet address
+    const wallet = useActiveAccount();
 
-    // Process insurance data
-    const [availableContracts, setAvailableContracts] = useState<Insurance[]>([]);
-    const [userContracts, setUserContracts] = useState<Insurance[]>([]);
+    // Remove the previous premiumTimestamps useReadContract hook (since we now fetch per insurance)
 
+    // Once rawInsurances and address are available, batch fetch each premium timestamp.
     useEffect(() => {
-        if (rawInsurances && premiumData) { // TODO: wtf is rawInsurances
-            const processed = (rawInsurances as any[]).map((insurance, id) => {
-                // Access the nested mapping correctly
-                const timestamp = premiumData[id]?.[address!] || 0;
-                return {
-                    id,
-                    receiver: insurance.receiver,
-                    payoutAmount: toEther(insurance.payout),
-                    location: {
-                        lat: Number(insurance.x) / 1e6,
-                        lng: Number(insurance.y) / 1e6,
-                    },
-                    premiumPaid: timestamp > 0,
-                    premiumExpires: timestamp + 30 * 86400,
-                };
-            });
-
-            setAvailableContracts(processed);
+        async function fetchPremiums() {
+            if (!rawInsurances || !wallet) return;
+            // Process each insurance contract
+            const processed: InsuranceDisplay[] = await Promise.all(
+                rawInsurances.map(async (insurance, idx) => {
+                    // Call getPremiumTimestamp for each insurance id and the user's address.
+                    // Using the SDK (assumes insuranceEscrow exposes a read method)
+                    let timestamp = 0;
+                    try {
+                        // Note: adapt the following as required by your Thirdweb contract call mechanism
+                        const { data: timestamp } = useReadContract({
+                            contract: insuranceEscrow,
+                            method: "getPremiumTimestamp",
+                            params: [BigInt(idx), wallet.address],
+                        });
+                        // timestamp here is a number representing when premium was paid
+                    } catch (error) {
+                        console.error(`Error fetching premium timestamp for insurance ${idx}:`, error);
+                    }
+                    const premiumPaid = timestamp > 0;
+                    const premiumExpires = premiumPaid ? Number(timestamp) + 30 * 86400 : 0;
+                    return {
+                        id: idx,
+                        receiver: insurance.receiver,
+                        payoutAmount: toEther(insurance.payout),
+                        location: {
+                            lat: Number(insurance.lat) / 1e6,
+                            lng: Number(insurance.long) / 1e6,
+                        },
+                        premiumPaid,
+                        premiumExpires,
+                    };
+                })
+            );
+            // Separate into available insurances vs active contracts
+            setAvailableContracts(processed.filter((item) => !item.premiumPaid));
+            // For active contracts, also check that premium isn't expired, using the current time from the trusted source.
+            const currentTime = Date.now() / 1000; // Unix timestamp in seconds
             setUserContracts(
                 processed.filter(
-                    (contract) =>
-                        contract.premiumPaid && contract.premiumExpires > Date.now() / 1000
+                    (item) => item.premiumPaid && item.premiumExpires > currentTime
                 )
             );
         }
-    }, [rawInsurances, premiumData, address]);
+        fetchPremiums();
+    }, [rawInsurances, wallet]);
 
-    // Contract interactions
-    const { writeContract: payPremium } = useWriteContract(); // TODO: Change this to thirdweb
-    const { writeContract: requestPayout } = useWriteContract();
-
-    const handlePayPremium = (insuranceId: number) => { // TODO: Change this to thirdweb
-        payPremium({
-            address: CONTRACT_ADDRESS,
-            abi: InsuranceEscrow.abi,
-            functionName: "payPremium",
-            args: [insuranceId],
-        });
-    };
-
-    const handleClaim = async (insuranceId: number) => {
-        setIsClaiming(true);
+    // Function to pay premium for a selected insurance
+    // Ensure that the premium amount (from contract) is sent as msg.value etc.
+    //const { writeContract: payPremium } = useWriteContract(); // TODO: useSendAndConfirmTransaction()
+    const handlePayPremium = async (insuranceId: number) => {
         try {
-            // TODO: Call verifyCoords in mina.ts
-            await prepareCoordsFdcRequest(CONTRACT_ADDRESS, address!);
-            await prepareDisasterFdcRequest();
-        } finally {
-            setIsClaiming(false);
+            // await payPremium({
+            //     address: CONTRACT_ADDRESS,
+            //     abi: insuranceEscrow,
+            //     functionName: "payPremium",
+            //     args: [insuranceId],
+            //     // Optionally include value if needed, e.g., msg.value should match the premium in the contract
+            // });
+            // After paying premium, refresh the premium status of contracts, e.g. by refetching insurances.
+        } catch (error) {
+            console.error("Error paying premium:", error);
         }
     };
 
-    // Table configuration
-    const columns: ColumnDef<Insurance>[] = [
+    // Configure Tanstack table columns for available contracts.
+    const columns: ColumnDef<InsuranceDisplay>[] = [
         {
             accessorKey: "id",
             header: "Insurance ID",
@@ -165,7 +187,7 @@ export default function ClaimerPage() {
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* My Active Contracts */}
+                {/* Left Column: Active Contracts */}
                 <div className="lg:col-span-1">
                     <section className="mb-8">
                         <h2 className="text-3xl font-bold mb-6">My Contracts</h2>
@@ -178,7 +200,8 @@ export default function ClaimerPage() {
                                         <CardHeader>
                                             <CardTitle>Insurance #{contract.id}</CardTitle>
                                             <div className="text-sm text-muted-foreground">
-                                                Valid until: {new Date(contract.premiumExpires * 1000).toLocaleDateString()}
+                                                Valid until:{" "}
+                                                {new Date(contract.premiumExpires * 1000).toLocaleDateString()}
                                             </div>
                                         </CardHeader>
                                         <CardContent className="space-y-2">
@@ -187,16 +210,6 @@ export default function ClaimerPage() {
                                                 <span>{contract.payoutAmount} ETH</span>
                                             </div>
                                         </CardContent>
-                                        <CardFooter>
-                                            <Button
-                                                onClick={() => handleClaim(contract.id)}
-                                                className="w-full"
-                                                disabled={contract.premiumExpires < Date.now() / 1000 || isClaiming}
-                                            >
-                                                {isClaiming ? "Verifying..." :
-                                                    contract.premiumExpires < Date.now() / 1000 ? "Expired" : "Claim Now"}
-                                            </Button>
-                                        </CardFooter>
                                     </Card>
                                 ))}
                             </div>
@@ -204,7 +217,7 @@ export default function ClaimerPage() {
                     </section>
                 </div>
 
-                {/* Available Contracts */}
+                {/* Right Column: Available Insurance Contracts */}
                 <div className="lg:col-span-2">
                     <Card className="bg-background text-foreground">
                         <CardHeader>

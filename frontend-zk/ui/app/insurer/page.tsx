@@ -25,7 +25,7 @@ type Insurance = {
     value: bigint;
 };
 
-const CONTRACT_ADDRESS = "0xYourContractAddress" as const; // Flare contract
+const CONTRACT_ADDRESS = "0x345D747ad0556FB930A289eb0b1BA54eC4e0c428" as const; // Flare contract
 
 export default function InsurerPage() {
     const [progress, setProgress] = useState(-1);
@@ -43,7 +43,7 @@ export default function InsurerPage() {
     // Read contract data
     const { data: insuranceData } = useReadContract({
         address: CONTRACT_ADDRESS,
-        abi: InsuranceEscrow,
+        abi: InsuranceEscrow.abi,
         functionName: "getInsurances",
         query: {
             refetchInterval: 3000,
@@ -124,7 +124,7 @@ export default function InsurerPage() {
             // Create insurance contract with native token value
             writeContract({
                 address: CONTRACT_ADDRESS,
-                abi: InsuranceEscrow,
+                abi: InsuranceEscrow.abi,
                 functionName: "newInsurance",
                 args: [
                     address,

@@ -28,7 +28,7 @@ import {
     prepareCoordsFdcRequest, prepareDisasterFdcRequest
 } from "@/lib/flare";
 
-const CONTRACT_ADDRESS = "0xYourContractAddress"; // Flare contract
+const CONTRACT_ADDRESS = "0x345D747ad0556FB930A289eb0b1BA54eC4e0c428"; // Flare contract
 
 type Insurance = {
     id: number;
@@ -48,13 +48,13 @@ export default function ClaimerPage() {
     // Read all insurance contracts from blockchain
     const { data: rawInsurances } = useReadContract({
         address: CONTRACT_ADDRESS,
-        abi: InsuranceEscrow,
+        abi: InsuranceEscrow.abi,
         functionName: "getInsurances",
     });
 
     const { data: premiumTimestamps } = useReadContract({
         address: CONTRACT_ADDRESS,
-        abi: InsuranceEscrow,
+        abi: InsuranceEscrow.abi,
         functionName: "getPremiumTimestamp",
         args: [address], // Ensure this matches your contract's requirements
     });
@@ -101,7 +101,7 @@ export default function ClaimerPage() {
     const handlePayPremium = (insuranceId: number) => {
         payPremium({
             address: CONTRACT_ADDRESS,
-            abi: InsuranceEscrow,
+            abi: InsuranceEscrow.abi,
             functionName: "payPremium",
             args: [insuranceId],
         });

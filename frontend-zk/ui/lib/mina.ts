@@ -29,7 +29,7 @@ export async function deployCoords(
         await deployTxn.prove();
         await deployTxn.sign([devPrivateKey, zkAppPrivateKey]).send();
 
-        return "CONTRACT_ADDRESS";
+        return zkAppInstance.address.toBase58();
     } catch (error) {
         console.error(error);
     }

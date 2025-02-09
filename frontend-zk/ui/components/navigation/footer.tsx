@@ -21,7 +21,7 @@ export function Footer() {
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Protein Mango. All rights reserved.
+            © {new Date().getFullYear()} Protein Mango. Hacked together during ETHOxford 2025.
           </div>
         </div>
       </div>

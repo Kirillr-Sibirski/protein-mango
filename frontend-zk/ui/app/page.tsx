@@ -1,11 +1,18 @@
+"use client";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
+// Dynamically import the ThreeScene component with SSR disabled
+const ThreeScene = dynamic(() => import('@/components/three-scene'), {
+  ssr: false,
+});
+
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
+      <ThreeScene />
       <div className="relative z-10 container mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-left space-y-8">
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
